@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import skipIf
 
 import pytest
+import requests
 from parameterized import parameterized, parameterized_class
 
 from samcli.lib.utils import osutils
@@ -27,6 +28,7 @@ from .build_integ_base import (
     BuildIntegRubyBase,
     NestedBuildIntegBase,
     IntrinsicIntegBase,
+    CDKTestBase,
 )
 
 LOG = logging.getLogger(__name__)
@@ -284,22 +286,16 @@ class TestBuildCommand_NodeFunctions(BuildIntegBase):
     "Skip build tests on windows when running in CI unless overridden",
 )
 class TestBuildCommand_RubyFunctions(BuildIntegRubyBase):
-    EXPECTED_ARTIFACTS = {"app.rb", "Gemfile", "Gemfile.lock", ".bundle", "vendor"}
-
     @parameterized.expand(["ruby2.5", "ruby2.7"])
     @pytest.mark.flaky(reruns=3)
     @skipIf(SKIP_DOCKER_TESTS, SKIP_DOCKER_MESSAGE)
     def test_building_ruby_in_container(self, runtime):
-        self._test_with_default_gemfile(
-            runtime, "use_container", "Ruby", self.test_data_path, expected_artifacts=self.EXPECTED_ARTIFACTS
-        )
+        self._test_with_default_gemfile(runtime, "use_container", "Ruby", self.test_data_path)
 
     @parameterized.expand(["ruby2.5", "ruby2.7"])
     @pytest.mark.flaky(reruns=3)
     def test_building_ruby_in_process(self, runtime):
-        self._test_with_default_gemfile(
-            runtime, False, "Ruby", self.test_data_path, expected_artifacts=self.EXPECTED_ARTIFACTS
-        )
+        self._test_with_default_gemfile(runtime, False, "Ruby", self.test_data_path)
 
 
 @skipIf(
@@ -337,21 +333,6 @@ class TestBuildCommand_RubyFunctionsWithGemfileInTheRoot(BuildIntegRubyBase):
         shutil.copyfile(Path(self.template_path), Path(self.working_dir).joinpath("template.yaml"))
         # update template path with new location
         self.template_path = str(Path(self.working_dir).joinpath("template.yaml"))
-
-
-@skipIf(
-    ((IS_WINDOWS and RUNNING_ON_CI) and not CI_OVERRIDE),
-    "Skip build tests on windows when running in CI unless overridden",
-)
-class TestBuildCommand_RubyFunctionsWithoutGemfile(BuildIntegRubyBase):
-    """
-    Tests use case where Gemfile isn't present anywhere in the project.
-    Should copy source correctly without building any dependencies.
-    """
-    @parameterized.expand([("ruby2.5"), ("ruby2.7")])
-    @pytest.mark.flaky(reruns=3)
-    def test_building_ruby_in_process_with_root_gemfile(self, runtime):
-        self._test_with_default_gemfile(runtime, False, "RubyWithRootGemfile", self.test_data_path)
 
 
 @skipIf(
@@ -2103,3 +2084,118 @@ class TestBuildSAR(BuildIntegBase):
             # will fail the build as there is no mapping
             self.assertEqual(process_execute.process.returncode, 1)
             self.assertIn("Property \\'ApplicationId\\' cannot be resolved.", str(process_execute.stderr))
+
+
+class TestBuildWithCDKPluginNestedStacks(CDKTestBase):
+    def test_cdk_nested_build(self):
+        project_name = "cdk-example-multiple-stacks-01"
+        self.verify_build_success(project_name)
+        self.verify_included_expected_project_manifest()
+        ip = get_ip_address()
+        ip_str = ip.text.replace("\n", "")
+        body = f'{{"message": "hello world", "location": "{ip_str}"}}'
+        expected = {"body": body, "statusCode": 200}
+        self.verify_invoke_built_function("root-stack/nested-stack/cdk-wing-test-lambda", expected)
+        body = f'{{"message": "hello world 3!", "location": "{ip_str}"}}'
+        expected = {"body": body, "statusCode": 200}
+        self.verify_invoke_built_function("root-stack/nested-stack/nested-nested-stack/cdk-wing-test-lambda", expected)
+        body = f'{{"message": "hello world 2!", "location": "{ip_str}"}}'
+        expected = {"body": body, "statusCode": 200}
+        self.verify_invoke_built_function("Stack2/cdk-wing-test-lambda", expected)
+
+
+class TestBuildWithCDKPluginWithApiGateway(CDKTestBase):
+    def test_cdk_apigateway(self):
+        project_name = "cdk-example-rest-api-gateway"
+        project_path = self.get_project_path(project_name)
+        if not os.path.exists(os.path.join(project_path, "node_modules")):
+            LOG.info(f"Running npm install in path {project_path}")
+            run_command(["npm", "install"], cwd=project_path)
+        self.verify_build_success(project_name)
+        self.verify_included_expected_project_manifest()
+        # has some problem with local invoke
+
+
+class TestBuildWithCDKPluginWithApiCorsLambda(CDKTestBase):
+    def test_cdk_api_cors_lambda(self):
+        project_name = "api-cors-lambda"
+        self.verify_build_success(project_name)
+        self.verify_included_expected_project_manifest()
+        expected = {"body": "Lambda was invoked successfully.", "statusCode": 200}
+        self.verify_invoke_built_function("ApiCorsLambdaStack/ApiCorsLambda", expected)
+
+
+class TestBuildWithCDKLayer(CDKTestBase):
+    def test_cdk_layer(self):
+        project_name = "cdk-example-layer"
+        cmd_list = self.get_command_list(use_container=True)
+        self.verify_build_success(project_name, cmd_list)
+        self.verify_included_expected_project_manifest()
+        ip = get_ip_address()
+        ip_str = ip.text.replace("\n", "")
+        body = f'{{"message": "hello world", "location": "{ip_str}"}}'
+        expected = {"body": body, "statusCode": 200}
+        self.verify_invoke_built_function("CdkExampleLayerStack/lambda-function", expected)
+
+
+class TestBuildWithCDKVariousOptions(CDKTestBase):
+    project_name = "api-cors-lambda"
+
+    def test_cdk_build_with_use_container(self):
+        cmd_list = self.get_command_list(use_container=True)
+        self._verify_build(self.project_name, cmd_list)
+
+    def test_cdk_build_with_cache(self):
+        cache_dir = Path(self.working_dir, ".aws-sam", "cache")
+        cmd_list = self.get_command_list(cached=True, cache_dir=str(cache_dir))
+        self._verify_build(self.project_name, cmd_list)
+        self._verify_cached_artifact(cache_dir)
+        self._verify_build(self.project_name, cmd_list)
+
+    def test_cdk_build_with_parallel(self):
+        cmd_list = self.get_command_list(parallel=True)
+        self._verify_build(self.project_name, cmd_list)
+
+    def test_cdk_build_with_correct_project_type(self):
+        cmd_list = self.get_command_list(project_type="CDK")
+        self._verify_build(self.project_name, cmd_list)
+
+    def test_cdk_build_with_incorrect_project_type(self):
+        cmd_list = self.get_command_list(project_type="CFN")
+        self._verify_build_failed(self.project_name, cmd_list)
+
+    def test_cdk_build_with_cdk_context(self):
+        cmd_options = ["--cdk-context", "layer_id=another_layer_id", "--cdk-context", "another_handler=app.handler2"]
+        cmd_list = self.get_command_list(project_type="CDK")
+        cmd_list += cmd_options
+        self._verify_build(self.project_name, cmd_list)
+
+    def _verify_build(self, project_name, cmd_list):
+        self.verify_build_success(project_name, cmd_list)
+        self.verify_included_expected_project_manifest()
+        expected = {"body": "Lambda was invoked successfully.", "statusCode": 200}
+        self.verify_invoke_built_function("ApiCorsLambdaStack/ApiCorsLambda", expected)
+
+    def _verify_cached_artifact(self, cache_dir):
+        self.assertTrue(cache_dir.exists(), "Cache directory should be created")
+
+    def _verify_build_failed(self, project_name, cmd=None):
+        project_path = self.get_project_path(project_name)
+        if cmd:
+            cmd_list = cmd
+        else:
+            cmd_list = self.get_command_list()
+        LOG.info("Running Command: {}".format(cmd_list))
+        LOG.info(cmd_list)
+        process_execute = run_command(cmd_list, cwd=project_path)
+        self.assertEqual(1, process_execute.process.returncode)
+
+
+def get_ip_address():
+    try:
+        ip = requests.get("http://checkip.amazonaws.com/")
+    except requests.RequestException as e:
+        # Send some context about this error to Lambda Logs
+        LOG.error("failed to get ip {}".format(e))
+        raise e
+    return ip

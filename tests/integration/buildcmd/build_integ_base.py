@@ -185,11 +185,7 @@ class BuildIntegRubyBase(BuildIntegBase):
 
     FUNCTION_LOGICAL_ID = "Function"
 
-    def _test_with_default_gemfile(self, runtime, use_container, code_uri, relative_path, expected_artifacts=None):
-
-        if expected_artifacts is None:
-            expected_artifacts = self.EXPECTED_FILES_PROJECT_MANIFEST
-
+    def _test_with_default_gemfile(self, runtime, use_container, code_uri, relative_path):
         overrides = {"Runtime": runtime, "CodeUri": code_uri, "Handler": "ignored"}
         cmdlist = self.get_command_list(use_container=use_container, parameter_overrides=overrides)
 
@@ -200,7 +196,7 @@ class BuildIntegRubyBase(BuildIntegBase):
         self._verify_built_artifact(
             self.default_build_dir,
             self.FUNCTION_LOGICAL_ID,
-            expected_artifacts,
+            self.EXPECTED_FILES_PROJECT_MANIFEST,
             self.EXPECTED_RUBY_GEM,
         )
 
@@ -242,7 +238,8 @@ class BuildIntegRubyBase(BuildIntegBase):
         self._verify_resource_property(str(template_path), function_logical_id, "CodeUri", function_logical_id)
 
         all_artifacts = set(os.listdir(str(resource_artifact_dir)))
-        self.assertEqual(all_artifacts, expected_files)
+        actual_files = all_artifacts.intersection(expected_files)
+        self.assertEqual(actual_files, expected_files)
 
         ruby_version = None
         ruby_bundled_path = None
@@ -403,3 +400,141 @@ class IntrinsicIntegBase(BuildIntegBase):
                 self.assertIn(error_message, process_stderr)
             else:
                 self.assertEqual(0, process_execute.process.returncode)
+
+
+class CDKTestBase(BuildIntegBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.cmd = cls.base_command()
+        integration_dir = Path(__file__).resolve().parents[1]
+        cls.test_data_path = Path(integration_dir, "testdata", "buildcmd", "CDK")
+
+    def setUp(self):
+        # To invoke a function created by the build command, we need the built artifacts to be in a
+        # location that is shared in Docker. Most temp directories are not shared. Therefore we are
+        # using a scratch space within the test folder that is .gitignored. Contents of this folder
+        # is also deleted after every test run
+        self.scratch_dir = str(Path(__file__).resolve().parent.joinpath(str(uuid.uuid4()).replace("-", "")[:10]))
+        shutil.rmtree(self.scratch_dir, ignore_errors=True)
+        os.mkdir(self.scratch_dir)
+
+        self.working_dir = tempfile.mkdtemp(dir=self.scratch_dir)
+        self.custom_build_dir = tempfile.mkdtemp(dir=self.scratch_dir)
+
+        self.default_build_dir = Path(self.working_dir, ".aws-sam", "build")
+
+    def tearDown(self):
+        self.custom_build_dir and shutil.rmtree(self.custom_build_dir, ignore_errors=True)
+        self.working_dir and shutil.rmtree(self.working_dir, ignore_errors=True)
+        self.scratch_dir and shutil.rmtree(self.scratch_dir, ignore_errors=True)
+
+        npm_projects = ["cdk-example-rest-api-gateway"]
+
+        for project in npm_projects:
+            project_path = self.get_project_path(project)
+            node_modules_path = os.path.join(project_path, "node_modules")
+            package_lock_path = os.path.join(project_path, "package-lock.json")
+            if os.path.exists(node_modules_path):
+                shutil.rmtree(node_modules_path, ignore_errors=True)
+            if os.path.exists(package_lock_path):
+                os.remove(package_lock_path)
+
+    def copy_source_to_temp(self, project_name):
+        source = self.get_project_path(project_name)
+        destination = str(Path(self.working_dir, "source"))
+        if not os.path.exists(destination):
+            self.temp_source = shutil.copytree(source, destination)
+
+    def get_command_list(
+        self,
+        build_dir=None,
+        base_dir=None,
+        manifest_path=None,
+        use_container=None,
+        parameter_overrides=None,
+        mode=None,
+        function_identifier=None,
+        debug=False,
+        cached=False,
+        cache_dir=None,
+        parallel=False,
+        container_env_var=None,
+        container_env_var_file=None,
+        build_image=None,
+        region=None,
+    ):
+
+        command_list = [self.cmd, "build", "-b", str(self.default_build_dir)]
+
+        if parameter_overrides:
+            command_list += ["--parameter-overrides", self._make_parameter_override_arg(parameter_overrides)]
+
+        if build_dir:
+            command_list += ["-b", build_dir]
+
+        if base_dir:
+            command_list += ["-s", base_dir]
+
+        if manifest_path:
+            command_list += ["-m", manifest_path]
+
+        if use_container:
+            command_list += ["--use-container"]
+
+        if debug:
+            command_list += ["--debug"]
+
+        if cached:
+            command_list += ["--cached"]
+
+        if cache_dir:
+            command_list += ["-cd", cache_dir]
+
+        if parallel:
+            command_list += ["--parallel"]
+
+        if container_env_var:
+            command_list += ["--container-env-var", container_env_var]
+
+        if container_env_var_file:
+            command_list += ["--container-env-var-file", container_env_var_file]
+
+        if build_image:
+            command_list += ["--build-image", build_image]
+
+        if region:
+            command_list += ["--region", region]
+
+        return command_list
+
+    def get_project_path(self, project_name):
+        return str(Path(self.test_data_path, project_name))
+
+    def verify_build_success(self, project_name, cmd=None):
+        self.copy_source_to_temp(project_name)
+        # project_path = self.get_project_path(project_name)
+        if cmd:
+            cmd_list = cmd
+        else:
+            cmd_list = self.get_command_list()
+        LOG.info("Running Command: {}".format(cmd_list))
+        LOG.info(cmd_list)
+        process_execute = run_command(cmd_list, cwd=self.temp_source)
+        self.assertEqual(0, process_execute.process.returncode)
+
+        self.assertIn("Build Succeeded", str(process_execute.stdout))
+
+    def verify_invoke_built_function(self, function_logical_id, expected_result):
+        LOG.info("Invoking built function '{}'".format(function_logical_id))
+
+        cmd_list = [self.cmd, "local", "invoke", function_logical_id, "--project-type", "cdk"]
+
+        process_execute = run_command(cmd_list, cwd=self.working_dir)
+        process_execute.process.wait()
+        process_stdout = process_execute.stdout.decode("utf-8")
+        self.assertEqual(json.loads(process_stdout), expected_result)
+
+    def verify_included_expected_project_manifest(self):
+        manifest = {"manifest.json", "tree.json", "cdk.out"}
+        build_artifact_files = set(os.listdir(str(self.default_build_dir)))
+        self.assertTrue(build_artifact_files.intersection(manifest))
