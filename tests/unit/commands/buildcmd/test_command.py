@@ -50,6 +50,9 @@ class TestDoCli(TestCase):
         modified_template_child = "modified template 2"
         builder_mock.update_template.side_effect = [modified_template_root, modified_template_child]
 
+        iac = Mock()
+        project = Mock()
+
         do_cli(
             ctx_mock,
             "function_identifier",
@@ -69,6 +72,9 @@ class TestDoCli(TestCase):
             (""),
             "container_env_var_file",
             (),
+            "CFN",
+            iac,
+            project,
         )
 
         ApplicationBuilderMock.assert_called_once_with(
@@ -92,31 +98,16 @@ class TestDoCli(TestCase):
                 call(
                     root_stack,
                     artifacts,
-                    stack_output_template_path_by_stack_path,
                 )
             ],
             [
                 call(
                     child_stack,
                     artifacts,
-                    stack_output_template_path_by_stack_path,
                 )
             ],
         )
-        move_template_mock.assert_has_calls(
-            [
-                call(
-                    root_stack.location,
-                    stack_output_template_path_by_stack_path[root_stack.stack_path],
-                    modified_template_root,
-                ),
-                call(
-                    child_stack.location,
-                    stack_output_template_path_by_stack_path[child_stack.stack_path],
-                    modified_template_child,
-                ),
-            ]
-        )
+        iac.write_project.assert_has_calls([call(ctx_mock.project, ctx_mock.build_dir)])
 
     @parameterized.expand(
         [
@@ -161,6 +152,9 @@ class TestDoCli(TestCase):
                 (""),
                 "container_env_var_file",
                 (),
+                "CFN",
+                Mock(),
+                Mock(),
             )
 
         self.assertEqual(str(ctx.exception), str(exception))
@@ -173,6 +167,8 @@ class TestDoCli(TestCase):
         BuildContextMock.return_value.__enter__ = Mock()
         BuildContextMock.return_value.__enter__.return_value = ctx_mock
         ApplicationBuilderMock.side_effect = FunctionNotFound("Function Not Found")
+        iac = Mock()
+        project = Mock()
 
         with self.assertRaises(UserException) as ctx:
             do_cli(
@@ -194,6 +190,9 @@ class TestDoCli(TestCase):
                 (""),
                 "container_env_var_file",
                 (),
+                "CFN",
+                iac,
+                project,
             )
 
         self.assertEqual(str(ctx.exception), "Function Not Found")

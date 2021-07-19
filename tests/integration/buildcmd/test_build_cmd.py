@@ -1,10 +1,13 @@
+import shutil
+import sys
+import os
 import logging
 import os
 import random
 import shutil
 import sys
 from pathlib import Path
-from unittest import skipIf
+from parameterized import parameterized, parameterized_class
 
 import pytest
 import requests
@@ -1858,9 +1861,9 @@ class TestBuildWithNestedStacksImage(NestedBuildIntegBase):
         stack_paths = ["", "LocalNestedStack"]
         if not SKIP_DOCKER_TESTS:
             self._verify_build(
-                [],  # there is no function artifact dirs to check
+                [],
                 stack_paths,
-                command_result,
+                command_result,  # there is no function artifact dirs to check
             )
 
             overrides = self._make_parameter_override_arg(overrides)
@@ -2012,8 +2015,8 @@ class TestBuildWithS3FunctionsOrLayers(NestedBuildIntegBase):
         if not SKIP_DOCKER_TESTS:
             self._verify_build(
                 ["ServerlessFunction", "LambdaFunction"],
-                [""],  # there is only one stack
-                command_result,
+                [""],
+                command_result,  # there is only one stack
             )
             # these two functions are buildable and `sam build` would build it.
             # but since the two functions both depends on layers with s3 uri,
@@ -2048,8 +2051,8 @@ class TestBuildWithZipFunctionsOrLayers(NestedBuildIntegBase):
             # which are
             self._verify_build(
                 [],
-                [""],  # there is only one stack
-                command_result,
+                [""],
+                command_result,  # there is only one stack
             )
 
 

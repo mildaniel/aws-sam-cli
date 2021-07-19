@@ -6,6 +6,7 @@ import logging
 
 from typing import Any, Dict, Optional, cast, Iterable, Union
 from samcli.commands._utils.resources import AWS_SERVERLESS_APPLICATION, AWS_CLOUDFORMATION_STACK
+from samcli.lib.iac.interface import Stack as IacStack
 from samcli.lib.intrinsic_resolver.intrinsic_property_resolver import IntrinsicResolver
 from samcli.lib.intrinsic_resolver.intrinsics_symbol_table import IntrinsicsSymbolTable
 from samcli.lib.samlib.resource_metadata_normalizer import ResourceMetadataNormalizer
@@ -143,7 +144,10 @@ class SamBaseProvider:
         str
             Representing the local imageuri
         """
-        return cast(Optional[str], resource_properties.get(code_property_key, dict()).get("ImageUri", None))
+        code = resource_properties.get(code_property_key, dict())
+        if isinstance(code, str):
+            return cast(Optional[str], code)
+        return cast(Optional[str], code.get("ImageUri", None))
 
     @staticmethod
     def _extract_sam_function_imageuri(resource_properties: Dict, code_property_key: str) -> Optional[str]:
@@ -165,7 +169,11 @@ class SamBaseProvider:
         return resource_properties.get(code_property_key, None)
 
     @staticmethod
-    def get_template(template_dict: Dict, parameter_overrides: Optional[Dict[str, str]] = None) -> Dict:
+    def get_template(
+        template_dict: IacStack,
+        parameter_overrides: Optional[Dict[str, str]] = None,
+        normalize_resource_metadata: bool = True,
+    ) -> IacStack:
         """
         Given a SAM template dictionary, return a cleaned copy of the template where SAM plugins have been run
         and parameter values have been substituted.
@@ -178,16 +186,21 @@ class SamBaseProvider:
         parameter_overrides: dict
             Optional dictionary of values for template parameters
 
+        normalize_resource_metadata: bool
+            flag to normalize resource metadata or not; For package and deploy, we don't need to normalize resource
+            metadata, which usually exists in a CDK-synthed template and is used for build and local testing
+
         Returns
         -------
         dict
             Processed SAM template
         """
-        template_dict = template_dict or {}
+        template_dict = template_dict or IacStack()
         parameters_values = SamBaseProvider._get_parameter_values(template_dict, parameter_overrides)
         if template_dict:
             template_dict = SamTranslatorWrapper(template_dict, parameter_values=parameters_values).run_plugins()
-        ResourceMetadataNormalizer.normalize(template_dict)
+        if normalize_resource_metadata:
+            ResourceMetadataNormalizer.normalize(template_dict)
 
         resolver = IntrinsicResolver(
             template=template_dict,

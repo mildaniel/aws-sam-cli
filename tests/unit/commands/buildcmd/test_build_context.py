@@ -39,12 +39,17 @@ class TestBuildContext__enter__(TestCase):
         func_provider_mock.get.return_value = function1
         funcprovider = SamFunctionProviderMock.return_value = func_provider_mock
 
-        base_dir = pathlib_mock.Path.return_value.resolve.return_value.parent = "basedir"
+        base_dir = pathlib_mock.Path.return_value.resolve.return_value = "basedir"
         container_mgr_mock = ContainerManagerMock.return_value = Mock()
+
+        iac = Mock()
+        project = Mock()
+        iac_stack = Mock()
+        iac_stack.origin_dir = "template_file"
+        project.stacks = [iac_stack]
 
         context = BuildContext(
             "function_identifier",
-            "template_file",
             None,  # No base dir is provided
             "build_dir",
             manifest_path="manifest_path",
@@ -56,7 +61,8 @@ class TestBuildContext__enter__(TestCase):
             mode="buildmode",
             cached=False,
             cache_dir="cache_dir",
-            aws_region="any_aws_region",
+            iac=iac,
+            project=project,
         )
         setup_build_dir_mock = Mock()
         build_dir_result = setup_build_dir_mock.return_value = "my/new/build/dir"
@@ -79,11 +85,7 @@ class TestBuildContext__enter__(TestCase):
         self.assertTrue(function1 in resources_to_build.functions)
         self.assertTrue(layer1 in resources_to_build.layers)
 
-        get_buildable_stacks_mock.assert_called_once_with(
-            "template_file",
-            parameter_overrides={"overrides": "value"},
-            global_parameter_overrides={"AWS::Region": "any_aws_region"},
-        )
+        get_buildable_stacks_mock.assert_called_once_with([iac_stack], parameter_overrides={"overrides": "value"})
         SamFunctionProviderMock.assert_called_once_with([stack], False)
         pathlib_mock.Path.assert_called_once_with("template_file")
         setup_build_dir_mock.assert_called_with("build_dir", True)
@@ -120,9 +122,14 @@ class TestBuildContext__enter__(TestCase):
         base_dir = pathlib_mock.Path.return_value.resolve.return_value.parent = "basedir"
         container_mgr_mock = ContainerManagerMock.return_value = Mock()
 
+        iac = Mock()
+        project = Mock()
+        iac_stack = Mock()
+        iac_stack.origin_dir = "template_file"
+        project.stacks = [iac_stack]
+
         context = BuildContext(
             "illegal",
-            "template_file",
             None,  # No base dir is provided
             "build_dir",
             manifest_path="manifest_path",
@@ -134,6 +141,8 @@ class TestBuildContext__enter__(TestCase):
             mode="buildmode",
             cached=False,
             cache_dir="cache_dir",
+            iac=iac,
+            project=project,
         )
         setup_build_dir_mock = Mock()
         build_dir_result = setup_build_dir_mock.return_value = "my/new/build/dir"
@@ -173,9 +182,14 @@ class TestBuildContext__enter__(TestCase):
         base_dir = pathlib_mock.Path.return_value.resolve.return_value.parent = "basedir"
         container_mgr_mock = ContainerManagerMock.return_value = Mock()
 
+        iac = Mock()
+        project = Mock()
+        iac_stack = Mock()
+        iac_stack.origin_dir = "template_file"
+        project.stacks = [iac_stack]
+
         context = BuildContext(
             "layer1",
-            "template_file",
             None,  # No base dir is provided
             "build_dir",
             manifest_path="manifest_path",
@@ -187,6 +201,8 @@ class TestBuildContext__enter__(TestCase):
             mode="buildmode",
             cached=False,
             cache_dir="cache_dir",
+            iac=iac,
+            project=project,
         )
         setup_build_dir_mock = Mock()
         build_dir_result = setup_build_dir_mock.return_value = "my/new/build/dir"
@@ -228,9 +244,14 @@ class TestBuildContext__enter__(TestCase):
         base_dir = pathlib_mock.Path.return_value.resolve.return_value.parent = "basedir"
         container_mgr_mock = ContainerManagerMock.return_value = Mock()
 
+        iac = Mock()
+        project = Mock()
+        iac_stack = Mock()
+        iac_stack.origin_dir = "template_file"
+        project.stacks = [iac_stack]
+
         context = BuildContext(
             "func1",
-            "template_file",
             None,  # No base dir is provided
             "build_dir",
             manifest_path="manifest_path",
@@ -242,6 +263,8 @@ class TestBuildContext__enter__(TestCase):
             mode="buildmode",
             cached=False,
             cache_dir="cache_dir",
+            iac=iac,
+            project=project,
         )
         setup_build_dir_mock = Mock()
         build_dir_result = setup_build_dir_mock.return_value = "my/new/build/dir"
@@ -283,9 +306,14 @@ class TestBuildContext__enter__(TestCase):
         base_dir = pathlib_mock.Path.return_value.resolve.return_value.parent = "basedir"
         container_mgr_mock = ContainerManagerMock.return_value = Mock()
 
+        iac = Mock()
+        project = Mock()
+        iac_stack = Mock()
+        iac_stack.origin_dir = "template_file"
+        project.stacks = [iac_stack]
+
         context = BuildContext(
             "layer1",
-            "template_file",
             None,  # No base dir is provided
             "build_dir",
             manifest_path="manifest_path",
@@ -297,6 +325,8 @@ class TestBuildContext__enter__(TestCase):
             mode="buildmode",
             cached=False,
             cache_dir="cache_dir",
+            iac=iac,
+            project=project,
         )
         setup_build_dir_mock = Mock()
         build_dir_result = setup_build_dir_mock.return_value = "my/new/build/dir"
@@ -348,12 +378,17 @@ class TestBuildContext__enter__(TestCase):
         layer_provider_mock.get_all.return_value = [layer1, layer2_skipped, layer3_skipped]
         layerprovider = SamLayerProviderMock.return_value = layer_provider_mock
 
-        base_dir = pathlib_mock.Path.return_value.resolve.return_value.parent = "basedir"
+        base_dir = pathlib_mock.Path.return_value.resolve.return_value = "basedir"
         container_mgr_mock = ContainerManagerMock.return_value = Mock()
+
+        iac = Mock()
+        project = Mock()
+        iac_stack = Mock()
+        iac_stack.origin_dir = "template_file"
+        project.stacks = [iac_stack]
 
         context = BuildContext(
             None,
-            "template_file",
             None,  # No base dir is provided
             "build_dir",
             manifest_path="manifest_path",
@@ -365,6 +400,8 @@ class TestBuildContext__enter__(TestCase):
             mode="buildmode",
             cached=False,
             cache_dir="cache_dir",
+            iac=iac,
+            project=project,
         )
         setup_build_dir_mock = Mock()
         build_dir_result = setup_build_dir_mock.return_value = "my/new/build/dir"
@@ -387,9 +424,7 @@ class TestBuildContext__enter__(TestCase):
         resources_to_build = context.resources_to_build
         self.assertEqual(resources_to_build.functions, [func1, func2])
         self.assertEqual(resources_to_build.layers, [layer1])
-        get_buildable_stacks_mock.assert_called_once_with(
-            "template_file", parameter_overrides={"overrides": "value"}, global_parameter_overrides=None
-        )
+        get_buildable_stacks_mock.assert_called_once_with([iac_stack], parameter_overrides={"overrides": "value"})
         SamFunctionProviderMock.assert_called_once_with([stack], False)
         pathlib_mock.Path.assert_called_once_with("template_file")
         setup_build_dir_mock.assert_called_with("build_dir", True)
@@ -416,9 +451,14 @@ class TestBuildContext__enter__(TestCase):
     ):
         get_buildable_stacks_mock.return_value = ([], remote_stack_full_paths)
 
+        iac = Mock()
+        project = Mock()
+        iac_stack = Mock()
+        iac_stack.origin_dir = "template_file"
+        project.stacks = [iac_stack]
+
         context = BuildContext(
             "function_identifier",
-            "template_file",
             None,  # No base dir is provided
             "build_dir",
             manifest_path="manifest_path",
@@ -430,6 +470,8 @@ class TestBuildContext__enter__(TestCase):
             mode="buildmode",
             cached=False,
             cache_dir="cache_dir",
+            iac=iac,
+            project=project,
         )
         context._setup_build_dir = Mock()
 

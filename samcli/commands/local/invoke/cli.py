@@ -6,8 +6,12 @@ import logging
 import click
 
 from samcli.cli.main import pass_context, common_options as cli_framework_options, aws_creds_options, print_cmdline_args
+from samcli.commands._utils.iac_validations import iac_options_validation
+from samcli.commands._utils.options import project_type_click_option, cdk_click_options
 from samcli.commands.local.cli_common.options import invoke_common_options, local_common_options
 from samcli.commands.local.lib.exceptions import InvalidIntermediateImageError
+from samcli.lib.iac.interface import IacPlugin, Project
+from samcli.lib.iac.utils.helpers import inject_iac_plugin
 from samcli.lib.telemetry.metric import track_command
 from samcli.cli.cli_config_file import configuration_option, TomlProvider
 from samcli.lib.utils.version_checker import check_newer_version
@@ -42,11 +46,15 @@ STDIN_FILE_NAME = "-"
     "is not specified, no event is assumed. Pass in the value '-' to input JSON via stdin",
 )
 @click.option("--no-event", is_flag=True, default=True, help="DEPRECATED: By default no event is assumed.", hidden=True)
+@project_type_click_option(include_build=True)
 @invoke_common_options
 @local_common_options
 @cli_framework_options
 @aws_creds_options
 @click.argument("function_logical_id", required=False)
+@cdk_click_options
+@inject_iac_plugin(with_build=True)
+@iac_options_validation(require_stack=False)
 @pass_context
 @track_command  # pylint: disable=R0914
 @check_newer_version
@@ -72,14 +80,16 @@ def cli(
     parameter_overrides,
     config_file,
     config_env,
-    container_host,
-    container_host_interface,
+    cdk_app,
+    cdk_context,
+    project_type: str,
+    iac: IacPlugin,
+    project: Project,
 ):
     """
     `sam local invoke` command entry point
     """
     # All logic must be implemented in the ``do_cli`` method. This helps with easy unit testing
-
     do_cli(
         ctx,
         function_logical_id,
@@ -99,8 +109,9 @@ def cli(
         force_image_build,
         shutdown,
         parameter_overrides,
-        container_host,
-        container_host_interface,
+        project_type,
+        iac,
+        project,
     )  # pragma: no cover
 
 
@@ -123,8 +134,9 @@ def do_cli(  # pylint: disable=R0914
     force_image_build,
     shutdown,
     parameter_overrides,
-    container_host,
-    container_host_interface,
+    project_type: str,
+    iac: IacPlugin,
+    project: Project,
 ):
     """
     Implementation of the ``cli`` method, just separated out for unit testing purposes
@@ -167,8 +179,8 @@ def do_cli(  # pylint: disable=R0914
             aws_region=ctx.region,
             aws_profile=ctx.profile,
             shutdown=shutdown,
-            container_host=container_host,
-            container_host_interface=container_host_interface,
+            iac=iac,
+            project=project,
         ) as context:
 
             # Invoke the function

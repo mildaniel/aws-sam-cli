@@ -47,6 +47,13 @@ class TestDeployCliCommand(TestCase):
         self.config_env = "mock-default-env"
         self.config_file = "mock-default-filename"
         self.signing_profiles = None
+        self.project_type = "CFN"
+        self.project = MagicMock()
+        self.iac = Mock()
+        self.stack_name = ""
+        self.iac_stack_mock = MagicMock()
+        self.project.find_stack_by_name.return_value = self.iac_stack_mock
+        self.project.stacks.__getitem__.return_value = self.iac_stack_mock
         MOCK_SAM_CONFIG.reset_mock()
 
     @patch("samcli.commands.package.command.click")
@@ -85,6 +92,9 @@ class TestDeployCliCommand(TestCase):
             resolve_s3=self.resolve_s3,
             config_env=self.config_env,
             config_file=self.config_file,
+            project_type=self.project_type,
+            project=self.project,
+            iac=self.iac,
         )
 
         mock_deploy_context.assert_called_with(
@@ -119,9 +129,8 @@ class TestDeployCliCommand(TestCase):
     @patch("samcli.commands.deploy.deploy_context.DeployContext")
     @patch("samcli.commands.deploy.guided_context.manage_stack")
     @patch("samcli.commands.deploy.guided_context.auth_per_resource")
-    @patch("samcli.commands.deploy.guided_context.get_template_parameters")
+    # @patch("samcli.commands.deploy.guided_context.get_template_parameters")
     @patch("samcli.commands.deploy.guided_context.SamLocalStackProvider.get_stacks")
-    @patch("samcli.commands.deploy.guided_context.get_template_artifacts_format")
     @patch("samcli.commands.deploy.guided_context.SamFunctionProvider")
     @patch("samcli.commands.deploy.guided_context.signer_config_per_function")
     @patch.object(GuidedConfig, "get_config_ctx", MagicMock(return_value=(None, get_mock_sam_config())))
@@ -133,9 +142,8 @@ class TestDeployCliCommand(TestCase):
         mock_prompt,
         mock_signer_config_per_function,
         mock_sam_function_provider,
-        mock_get_template_artifacts_format,
         mock_get_buildable_stacks,
-        mock_get_template_parameters,
+        # mock_get_template_parameters,
         mockauth_per_resource,
         mock_managed_stack,
         mock_deploy_context,
@@ -143,9 +151,13 @@ class TestDeployCliCommand(TestCase):
         mock_package_context,
         mock_package_click,
     ):
+        self.iac_stack_mock.has_assets_of_package_type.return_value = False
+        self.iac_stack_mock.get_overrideable_parameters.return_value = {
+            "Myparameter": {"Type": "String"},
+            "MyNoEchoParameter": {"Type": "String", "NoEcho": True},
+        }
         mock_get_buildable_stacks.return_value = (Mock(), [])
         mock_sam_function_provider.return_value = {}
-        mock_get_template_artifacts_format.return_value = [ZIP]
         context_mock = Mock()
         mockauth_per_resource.return_value = [("HelloWorldResource1", False), ("HelloWorldResource2", False)]
         mock_deploy_context.return_value.__enter__.return_value = context_mock
@@ -159,11 +171,6 @@ class TestDeployCliCommand(TestCase):
             "testconfig.toml",
             "test-env",
         ]
-
-        mock_get_template_parameters.return_value = {
-            "Myparameter": {"Type": "String"},
-            "MyNoEchoParameter": {"Type": "String", "NoEcho": True},
-        }
 
         mock_managed_stack.return_value = "managed-s3-bucket"
         mock_signer_config_per_function.return_value = ({}, {})
@@ -197,6 +204,9 @@ class TestDeployCliCommand(TestCase):
                     resolve_s3=self.resolve_s3,
                     config_env=self.config_env,
                     config_file=self.config_file,
+                    project_type=self.project_type,
+                    project=self.project,
+                    iac=self.iac,
                 )
 
     @patch("samcli.commands.package.command.click")
@@ -205,10 +215,7 @@ class TestDeployCliCommand(TestCase):
     @patch("samcli.commands.deploy.deploy_context.DeployContext")
     @patch("samcli.commands.deploy.guided_context.manage_stack")
     @patch("samcli.commands.deploy.guided_context.auth_per_resource")
-    @patch("samcli.commands.deploy.guided_context.get_template_parameters")
     @patch("samcli.commands.deploy.guided_context.SamLocalStackProvider.get_stacks")
-    @patch("samcli.commands.deploy.guided_context.get_template_artifacts_format")
-    @patch("samcli.commands.deploy.guided_context.get_template_function_resource_ids")
     @patch("samcli.commands.deploy.guided_context.SamFunctionProvider")
     @patch("samcli.commands.deploy.guided_context.signer_config_per_function")
     @patch.object(GuidedConfig, "get_config_ctx", MagicMock(return_value=(None, get_mock_sam_config())))
@@ -222,10 +229,7 @@ class TestDeployCliCommand(TestCase):
         mock_prompt,
         mock_signer_config_per_function,
         mock_sam_function_provider,
-        mock_get_template_function_resource_ids,
-        mock_get_template_artifacts_format,
         mock_get_buildable_stacks,
-        mock_get_template_parameters,
         mockauth_per_resource,
         mock_managed_stack,
         mock_deploy_context,
@@ -233,15 +237,21 @@ class TestDeployCliCommand(TestCase):
         mock_package_context,
         mock_package_click,
     ):
+        self.iac_stack_mock.has_assets_of_package_type.return_value = True
+        function_resource_mock = Mock()
+        function_resource_mock.item_id = "HelloWorldFunction"
+        self.iac_stack_mock.find_function_resources_of_package_type.return_value = [function_resource_mock]
+        self.iac_stack_mock.get_overrideable_parameters.return_value = {
+            "Myparameter": {"Type": "String"},
+            "MyNoEchoParameter": {"Type": "String", "NoEcho": True},
+        }
         mock_get_buildable_stacks.return_value = (Mock(), [])
         mock_tag_translation.return_value = "helloworld-123456-v1"
-        mock_get_template_function_resource_ids.return_value = ["HelloWorldFunction"]
 
         context_mock = Mock()
         mock_sam_function_provider.return_value = MagicMock(
             functions={"HelloWorldFunction": MagicMock(packagetype=IMAGE, imageuri="helloworld:v1")}
         )
-        mock_get_template_artifacts_format.return_value = [IMAGE]
         mockauth_per_resource.return_value = [("HelloWorldResource", False)]
         mock_deploy_context.return_value.__enter__.return_value = context_mock
         mock_confirm.side_effect = [True, False, True, True]
@@ -255,11 +265,6 @@ class TestDeployCliCommand(TestCase):
             "testconfig.toml",
             "test-env",
         ]
-
-        mock_get_template_parameters.return_value = {
-            "Myparameter": {"Type": "String"},
-            "MyNoEchoParameter": {"Type": "String", "NoEcho": True},
-        }
 
         mock_managed_stack.return_value = "managed-s3-bucket"
 
@@ -293,6 +298,9 @@ class TestDeployCliCommand(TestCase):
                 resolve_s3=self.resolve_s3,
                 config_env=self.config_env,
                 config_file=self.config_file,
+                project_type=self.project_type,
+                project=self.project,
+                iac=self.iac,
             )
 
             mock_deploy_context.assert_called_with(
@@ -346,9 +354,6 @@ class TestDeployCliCommand(TestCase):
     @patch("samcli.commands.deploy.guided_context.manage_stack")
     @patch("samcli.commands.deploy.guided_context.auth_per_resource")
     @patch("samcli.commands.deploy.guided_context.SamLocalStackProvider.get_stacks")
-    @patch("samcli.commands.deploy.guided_context.get_template_parameters")
-    @patch("samcli.commands.deploy.guided_context.get_template_function_resource_ids")
-    @patch("samcli.commands.deploy.guided_context.get_template_artifacts_format")
     @patch("samcli.commands.deploy.guided_context.SamFunctionProvider")
     @patch("samcli.commands.deploy.guided_context.signer_config_per_function")
     @patch.object(
@@ -366,9 +371,6 @@ class TestDeployCliCommand(TestCase):
         mock_prompt,
         mock_signer_config_per_function,
         mock_sam_function_provider,
-        mock_get_template_artifacts_format,
-        mock_get_template_function_resource_ids,
-        mock_get_template_parameters,
         mock_get_buildable_stacks,
         mockauth_per_resource,
         mock_managed_stack,
@@ -377,21 +379,23 @@ class TestDeployCliCommand(TestCase):
         mock_package_context,
         mock_package_click,
     ):
+        self.iac_stack_mock.has_assets_of_package_type.return_value = True
+        function_resource_mock = Mock()
+        function_resource_mock.item_id = "HelloWorldFunction"
+        self.iac_stack_mock.find_function_resources_of_package_type.return_value = [function_resource_mock]
+        self.iac_stack_mock.get_overrideable_parameters.return_value = {
+            "Myparameter": {"Type": "String"},
+            "MyParameterSpaces": {"Type": "String"},
+            "MyNoEchoParameter": {"Type": "String", "NoEcho": True},
+        }
         mock_get_buildable_stacks.return_value = (Mock(), [])
         mock_tag_translation.return_value = "helloworld-123456-v1"
-        mock_get_template_function_resource_ids.return_value = ["HelloWorldFunction"]
 
         context_mock = Mock()
         mock_sam_function_provider.return_value = MagicMock(
             functions={"HelloWorldFunction": MagicMock(packagetype=IMAGE, imageuri="helloworld:v1")}
         )
-        mock_get_template_artifacts_format.return_value = [IMAGE]
         mockauth_per_resource.return_value = [("HelloWorldResource", False)]
-        mock_get_template_parameters.return_value = {
-            "Myparameter": {"Type": "String"},
-            "MyParameterSpaces": {"Type": "String"},
-            "MyNoEchoParameter": {"Type": "String", "NoEcho": True},
-        }
         mock_deploy_context.return_value.__enter__.return_value = context_mock
         mock_prompt.side_effect = [
             "sam-app",
@@ -436,6 +440,9 @@ class TestDeployCliCommand(TestCase):
             resolve_s3=self.resolve_s3,
             config_env=self.config_env,
             config_file=self.config_file,
+            project_type=self.project_type,
+            project=self.project,
+            iac=self.iac,
         )
 
         mock_deploy_context.assert_called_with(
@@ -503,10 +510,7 @@ class TestDeployCliCommand(TestCase):
     @patch("samcli.commands.deploy.guided_context.auth_per_resource")
     @patch("samcli.commands.deploy.guided_context.SamLocalStackProvider.get_stacks")
     @patch("samcli.commands.deploy.guided_context.manage_stack")
-    @patch("samcli.commands.deploy.guided_context.get_template_parameters")
     @patch("samcli.commands.deploy.guided_context.signer_config_per_function")
-    @patch("samcli.commands.deploy.guided_context.get_template_artifacts_format")
-    @patch("samcli.commands.deploy.guided_context.get_template_function_resource_ids")
     @patch("samcli.commands.deploy.guided_context.SamFunctionProvider")
     @patch.object(
         GuidedConfig,
@@ -526,10 +530,7 @@ class TestDeployCliCommand(TestCase):
         mock_confirm,
         mock_prompt,
         mock_sam_function_provider,
-        mock_get_template_function_resource_ids,
-        mock_get_template_artifacts_format,
         mock_signer_config_per_function,
-        mock_get_template_parameters,
         mock_managed_stack,
         mock_get_buildable_stacks,
         mockauth_per_resource,
@@ -538,18 +539,20 @@ class TestDeployCliCommand(TestCase):
         mock_package_context,
         mock_package_click,
     ):
+        self.iac_stack_mock.has_assets_of_package_type.return_value = True
+        function_resource_mock = Mock()
+        function_resource_mock.item_id = "HelloWorldFunction"
+        self.iac_stack_mock.find_function_resources_of_package_type.return_value = [function_resource_mock]
+        self.iac_stack_mock.get_overrideable_parameters.return_value = {}
         mock_get_buildable_stacks.return_value = (Mock(), [])
         mock_tag_translation.return_value = "helloworld-123456-v1"
-        mock_get_template_function_resource_ids.return_value = ["HelloWorldFunction"]
 
         context_mock = Mock()
         mock_sam_function_provider.return_value = MagicMock(
             functions={"HelloWorldFunction": MagicMock(packagetype=IMAGE, imageuri="helloworld:v1")}
         )
-        mock_get_template_artifacts_format.return_value = [IMAGE]
         mockauth_per_resource.return_value = [("HelloWorldResource", False)]
 
-        mock_get_template_parameters.return_value = {}
         mock_deploy_context.return_value.__enter__.return_value = context_mock
         mock_prompt.side_effect = [
             "sam-app",
@@ -591,6 +594,9 @@ class TestDeployCliCommand(TestCase):
             config_env=self.config_env,
             config_file=self.config_file,
             signing_profiles=self.signing_profiles,
+            project_type=self.project_type,
+            project=self.project,
+            iac=self.iac,
         )
 
         mock_deploy_context.assert_called_with(
@@ -648,9 +654,6 @@ class TestDeployCliCommand(TestCase):
     @patch("samcli.commands.deploy.guided_context.manage_stack")
     @patch("samcli.commands.deploy.guided_context.auth_per_resource")
     @patch("samcli.commands.deploy.guided_context.SamLocalStackProvider.get_stacks")
-    @patch("samcli.commands.deploy.guided_context.get_template_parameters")
-    @patch("samcli.commands.deploy.guided_context.get_template_function_resource_ids")
-    @patch("samcli.commands.deploy.guided_context.get_template_artifacts_format")
     @patch("samcli.commands.deploy.guided_context.SamFunctionProvider")
     @patch("samcli.commands.deploy.guided_context.signer_config_per_function")
     @patch.object(GuidedConfig, "get_config_ctx", MagicMock(return_value=(None, get_mock_sam_config())))
@@ -664,9 +667,6 @@ class TestDeployCliCommand(TestCase):
         mock_prompt,
         mock_signer_config_per_function,
         mock_sam_function_provider,
-        mock_get_template_artifacts_format,
-        mock_get_template_function_resource_ids,
-        mock_get_template_parameters,
         mock_get_buildable_stacks,
         mockauth_per_resource,
         mock_managed_stack,
@@ -675,17 +675,19 @@ class TestDeployCliCommand(TestCase):
         mock_package_context,
         mock_package_click,
     ):
+        self.iac_stack_mock.has_assets_of_package_type.return_value = True
+        function_resource_mock = Mock()
+        function_resource_mock.item_id = "HelloWorldFunction"
+        self.iac_stack_mock.find_function_resources_of_package_type.return_value = [function_resource_mock]
+        self.iac_stack_mock.get_overrideable_parameters.return_value = {}
         mock_get_buildable_stacks.return_value = (Mock(), [])
         mock_tag_translation.return_value = "helloworld-123456-v1"
-        mock_get_template_function_resource_ids.return_value = ["HelloWorldFunction"]
 
         context_mock = Mock()
         mock_sam_function_provider.return_value = MagicMock(
             functions={"HelloWorldFunction": MagicMock(packagetype=IMAGE, imageuri="helloworld:v1")}
         )
-        mock_get_template_artifacts_format.return_value = [IMAGE]
         mockauth_per_resource.return_value = [("HelloWorldResource", False)]
-        mock_get_template_parameters.return_value = {}
         mock_deploy_context.return_value.__enter__.return_value = context_mock
         mock_prompt.side_effect = [
             "sam-app",
@@ -727,6 +729,9 @@ class TestDeployCliCommand(TestCase):
                 config_file=self.config_file,
                 config_env=self.config_env,
                 signing_profiles=self.signing_profiles,
+                project_type=self.project_type,
+                project=self.project,
+                iac=self.iac,
             )
 
             mock_deploy_context.assert_called_with(
@@ -796,6 +801,9 @@ class TestDeployCliCommand(TestCase):
             config_file=self.config_file,
             config_env=self.config_env,
             signing_profiles=self.signing_profiles,
+            project_type=self.project_type,
+            project=self.project,
+            iac=self.iac,
         )
 
         mock_deploy_context.assert_called_with(
@@ -853,4 +861,7 @@ class TestDeployCliCommand(TestCase):
                 config_file=self.config_file,
                 config_env=self.config_env,
                 signing_profiles=self.signing_profiles,
+                project_type=self.project_type,
+                project=self.project,
+                iac=self.iac,
             )

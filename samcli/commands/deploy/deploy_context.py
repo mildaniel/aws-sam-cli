@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 import boto3
 import click
 
+from samcli.commands._utils.template import get_template_data
 from samcli.commands.deploy import exceptions as deploy_exceptions
 from samcli.commands.deploy.auth_utils import auth_per_resource
 from samcli.commands.deploy.utils import (
@@ -30,7 +31,7 @@ from samcli.commands.deploy.utils import (
     hide_noecho_parameter_overrides,
 )
 from samcli.lib.deploy.deployer import Deployer
-from samcli.lib.intrinsic_resolver.intrinsics_symbol_table import IntrinsicsSymbolTable
+from samcli.lib.iac.interface import Stack
 from samcli.lib.package.s3_uploader import S3Uploader
 from samcli.lib.providers.sam_stack_provider import SamLocalStackProvider
 from samcli.lib.utils.botoconfig import get_boto_config_with_user_agent
@@ -214,10 +215,13 @@ class DeployContext:
         confirm_changeset : bool
             Should wait for customer's confirm before executing the changeset
         """
+        iac_stack = Stack()
+        template_dict = get_template_data(self.template_file)
+        iac_stack.update(template_dict)
         stacks, _ = SamLocalStackProvider.get_stacks(
-            self.template_file,
+            [iac_stack],
             parameter_overrides=sanitize_parameter_overrides(self.parameter_overrides),
-            global_parameter_overrides=self.global_parameter_overrides,
+            normalize_resource_metadata=False,
         )
         auth_required_per_resource = auth_per_resource(stacks)
 

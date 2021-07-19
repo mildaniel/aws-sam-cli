@@ -10,7 +10,7 @@ from click.testing import CliRunner
 from samcli.commands.exceptions import UserException
 from samcli.commands.init import cli as init_cmd
 from samcli.commands.init import do_cli as init_cli
-from samcli.commands.init.init_templates import InitTemplates, APP_TEMPLATES_REPO_URL
+from samcli.lib.iac.interface import ProjectTypes
 from samcli.lib.init import GenerateProjectFailedError
 from samcli.lib.utils.git_repo import GitRepo
 from samcli.lib.utils.packagetype import IMAGE, ZIP
@@ -62,11 +62,15 @@ class TestCli(TestCase):
             app_template=self.app_template,
             no_input=self.no_input,
             extra_context=None,
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN we should receive no errors
         generate_project_patch.assert_called_once_with(
             # need to change the location validation check
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             self.runtime,
@@ -96,11 +100,15 @@ class TestCli(TestCase):
             app_template=None,
             no_input=self.no_input,
             extra_context=None,
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN we should receive no errors
         generate_project_patch.assert_called_once_with(
             # need to change the location validation check
+            ProjectTypes.CFN,
             ANY,
             IMAGE,
             "nodejs12.x",
@@ -130,11 +138,15 @@ class TestCli(TestCase):
             app_template=None,
             no_input=self.no_input,
             extra_context=None,
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN we should receive no errors
         generate_project_patch.assert_called_once_with(
             # need to change the location validation check
+            ProjectTypes.CFN,
             ANY,
             IMAGE,
             "java11",
@@ -164,6 +176,9 @@ class TestCli(TestCase):
                 app_template="wrong-and-bad",
                 no_input=self.no_input,
                 extra_context=None,
+                auto_clone=False,
+                project_type=ProjectTypes.CFN,
+                cdk_language=None,
             )
 
     @patch("samcli.lib.utils.git_repo.GitRepo.clone")
@@ -185,6 +200,9 @@ class TestCli(TestCase):
                 app_template=self.app_template,
                 no_input=self.no_input,
                 extra_context=None,
+                auto_clone=False,
+                project_type=ProjectTypes.CFN,
+                cdk_language=None,
             )
 
     @patch("samcli.lib.utils.git_repo.GitRepo.clone")
@@ -212,10 +230,19 @@ class TestCli(TestCase):
                 app_template=None,
                 no_input=self.no_input,
                 extra_context=None,
+                auto_clone=False,
+                project_type=ProjectTypes.CFN,
+                cdk_language=None,
             )
 
             generate_project_patch.assert_called_with(
-                self.location, self.runtime, self.dependency_manager, self.output_dir, self.name, self.no_input
+                ProjectTypes.CFN,
+                self.location,
+                self.runtime,
+                self.dependency_manager,
+                self.output_dir,
+                self.name,
+                self.no_input,
             )
 
     @patch("samcli.lib.utils.git_repo.GitRepo.clone")
@@ -243,10 +270,19 @@ class TestCli(TestCase):
                 app_template=None,
                 no_input=self.no_input,
                 extra_context=None,
+                auto_clone=False,
+                project_type=ProjectTypes.CFN,
+                cdk_language=None,
             )
 
             generate_project_patch.assert_called_with(
-                self.location, self.runtime, self.dependency_manager, self.output_dir, self.name, self.no_input
+                ProjectTypes.CFN,
+                self.location,
+                self.runtime,
+                self.dependency_manager,
+                self.output_dir,
+                self.name,
+                self.no_input,
             )
 
     @patch("samcli.commands.init.init_generator.generate_project")
@@ -267,11 +303,22 @@ class TestCli(TestCase):
             app_template=self.app_template,
             no_input=self.no_input,
             extra_context=None,
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN we should receive no errors
         generate_project_patch.assert_called_once_with(
-            ANY, ZIP, self.runtime, self.dependency_manager, ".", self.name, True, self.extra_context_as_json
+            ProjectTypes.CFN,
+            ANY,
+            ZIP,
+            self.runtime,
+            self.dependency_manager,
+            ".",
+            self.name,
+            True,
+            self.extra_context_as_json,
         )
 
     @patch("samcli.commands.init.init_generator.generate_project")
@@ -292,10 +339,14 @@ class TestCli(TestCase):
             app_template=self.app_template,
             no_input=self.no_input,
             extra_context='{"schema_name":"events", "schema_type":"aws"}',
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN we should receive no errors and right extra_context should be passed
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             self.runtime,
@@ -324,10 +375,14 @@ class TestCli(TestCase):
             app_template=self.app_template,
             no_input=self.no_input,
             extra_context='{"project_name": "my_project", "runtime": "java8", "schema_name":"events", "schema_type": "aws"}',
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN extra_context should have not overridden default_parameters(name, runtime)
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             self.runtime,
@@ -356,6 +411,9 @@ class TestCli(TestCase):
                 app_template=self.app_template,
                 no_input=self.no_input,
                 extra_context='{"project_name", "my_project", "runtime": "java8", "schema_name":"events", "schema_type": "aws"}',
+                auto_clone=False,
+                project_type=ProjectTypes.CFN,
+                cdk_language=None,
             )
 
     @patch("samcli.commands.init.init_generator.generate_project")
@@ -376,10 +434,14 @@ class TestCli(TestCase):
             app_template=None,
             no_input=None,
             extra_context='{"schema_name":"events", "schema_type": "aws"}',
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN should set default parameter(name, runtime) as extra_context
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             "custom location",
             ZIP,
             "java8",
@@ -408,10 +470,14 @@ class TestCli(TestCase):
             app_template=None,
             no_input=None,
             extra_context='{"schema_name":"events", "schema_type": "aws"}',
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN extra_context should be without runtime
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             "custom location",
             ZIP,
             None,
@@ -440,10 +506,14 @@ class TestCli(TestCase):
             app_template=None,
             no_input=None,
             extra_context='{"schema_name":"events", "schema_type": "aws"}',
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN extra_context should be without name
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             "custom location",
             ZIP,
             "java8",
@@ -474,10 +544,14 @@ class TestCli(TestCase):
             # fmt: off
             extra_context='{\"schema_name\":\"events\", \"schema_type\":\"aws\"}',
             # fmt: on
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         # THEN we should receive no errors and right extra_context should be passed
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             self.runtime,
@@ -546,6 +620,7 @@ class TestCli(TestCase):
         schemas_api_caller_mock.return_value.download_source_code_binding.return_value = "result.zip"
         # WHEN the user follows interactive init prompts
 
+        # 1: Project Type: SAM
         # 1: AWS Quick Start Templates
         # 5: Java Runtime
         # 1: dependency manager maven
@@ -556,6 +631,7 @@ class TestCli(TestCase):
         # 1: select aws.events as registries
         # 1: select schema AWSAPICallViaCloudTrail
         user_input = """
+1
 1
 1
 5
@@ -572,6 +648,7 @@ Y
         result = runner.invoke(init_cmd, input=user_input)
         self.assertFalse(result.exception)
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             "java11",
@@ -613,6 +690,7 @@ Y
 
         # WHEN the user follows interactive init prompts
 
+        # 1: Project type: SAM
         # 1: AWS Quick Start Templates
         # 2: Package type - Image
         # 13: Java8 base image
@@ -620,6 +698,7 @@ Y
         # test-project: response to name
 
         user_input = """
+1
 1
 2
 13
@@ -630,6 +709,7 @@ test-project
         result = runner.invoke(init_cmd, input=user_input)
 
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             IMAGE,
             "java8",
@@ -638,6 +718,53 @@ test-project
             "test-project",
             True,
             {"project_name": "test-project", "runtime": "java8"},
+        )
+
+    @patch.object(InitTemplates, "__init__", MockInitTemplates.__init__)
+    @patch("samcli.commands.init.init_templates.InitTemplates._init_options_from_manifest")
+    @patch("samcli.commands.init.init_generator.generate_project")
+    def test_init_cli_int_with_cdk_zip_app_template(
+        self,
+        generate_project_patch,
+        init_options_from_manifest_mock,
+    ):
+        init_options_from_manifest_mock.return_value = [
+            {
+                "directory": "cdk-python/nodejs14.x/cookiecutter-aws-sam-hello-nodejs",
+                "displayName": "Hello World Example",
+                "dependencyManager": "npm",
+                "appTemplate": "hello-world",
+            }
+        ]
+
+        # WHEN the user follows interactive init prompts
+
+        # 2: Project type: CDK
+        # 1: AWS Quick Start Templates
+        # 1: CDK language - Python
+        # 1: Runtime - nodejs14.x
+        # test-project: response to name
+
+        user_input = """
+2
+1
+1
+1
+test-project
+            """
+        runner = CliRunner()
+        result = runner.invoke(init_cmd, input=user_input)
+
+        generate_project_patch.assert_called_once_with(
+            ProjectTypes.CDK,
+            ANY,
+            ZIP,
+            "nodejs14.x",
+            "npm",
+            ".",
+            "test-project",
+            True,
+            {"project_name": "test-project", "runtime": "nodejs14.x"},
         )
 
     @patch.object(InitTemplates, "__init__", MockInitTemplates.__init__)
@@ -700,6 +827,7 @@ test-project
         schemas_api_caller_mock.return_value.download_source_code_binding.return_value = "result.zip"
         # WHEN the user follows interactive init prompts
 
+        # 1: Project type: SAM
         # 1: AWS Quick Start Templates
         # 5: Java Runtime
         # 1: dependency manager maven
@@ -712,6 +840,7 @@ test-project
         # 1: select aws.events as registries
         # 1: select schema AWSAPICallViaCloudTrail
         user_input = """
+1
 1
 1
 5
@@ -731,6 +860,7 @@ us-east-1
 
         self.assertFalse(result.exception)
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             "java11",
@@ -783,6 +913,7 @@ us-east-1
         )
         # WHEN the user follows interactive init prompts
 
+        # 1: Project type: SAM
         # 1: AWS Quick Start Templates
         # 5: Java Runtime
         # 1: dependency manager maven
@@ -795,6 +926,7 @@ us-east-1
         # 1: select aws.events as registries
         # 1: select schema AWSAPICallViaCloudTrail
         user_input = """
+1
 1
 1
 5
@@ -875,6 +1007,7 @@ invalid-region
         )
         # WHEN the user follows interactive init prompts
 
+        # 1: Project type: SAM
         # 1: AWS Quick Start Templates
         # 5: Java Runtime
         # 1: dependency manager maven
@@ -885,6 +1018,7 @@ invalid-region
         # 1: select aws.events as registries
         # 1: select schema AWSAPICallViaCloudTrail
         user_input = """
+1
 1
 1
 5
@@ -901,6 +1035,7 @@ Y
         result = runner.invoke(init_cmd, input=user_input)
         self.assertTrue(result.exception)
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             "java11",
@@ -976,6 +1111,7 @@ Y
             {"Error": {"Code": "ConflictException", "Message": "ConflictException"}}, "operation"
         )
         # WHEN the user follows interactive init prompts
+        # 1: Project type: SAM
         # 1: AWS Quick Start Templates
         # 5: Java Runtime
         # 1: dependency manager maven
@@ -986,6 +1122,7 @@ Y
         # 1: select aws.events as registries
         # 1: select schema AWSAPICallViaCloudTrail
         user_input = """
+1
 1
 1
 5
@@ -1023,10 +1160,14 @@ Y
             app_template="eventBridge-schema-app",
             no_input=self.no_input,
             extra_context=None,
+            auto_clone=False,
+            project_type=ProjectTypes.CFN,
+            cdk_language=None,
         )
 
         generate_project_patch.assert_called_once_with(
             # need to change the location validation check
+            ProjectTypes.CFN,
             ANY,
             ZIP,
             self.runtime,
@@ -1042,9 +1183,11 @@ Y
     def test_init_cli_int_from_location(self, generate_project_patch, cd_mock):
         # WHEN the user follows interactive init prompts
 
+        # 1: Project type: SAM
         # 2: selecting custom location
         # foo: the "location"
         user_input = """
+1
 2
 foo
         """
@@ -1056,6 +1199,39 @@ foo
         self.assertFalse(result.exception)
         generate_project_patch.assert_called_once_with(
             # need to change the location validation check
+            ProjectTypes.CFN,
+            "foo",
+            ZIP,
+            None,
+            None,
+            ".",
+            None,
+            False,
+            None,
+        )
+
+    @patch("samcli.commands.init.init_templates.InitTemplates._shared_dir_check")
+    @patch("samcli.commands.init.init_generator.generate_project")
+    def test_init_cli_int_cdk_project_from_location(self, generate_project_patch, sd_mock):
+        # WHEN the user follows interactive init prompts
+
+        # 2: Project type: CDK
+        # 2: selecting custom location
+        # foo: the "location"
+        user_input = """
+2
+2
+foo
+        """
+
+        runner = CliRunner()
+        result = runner.invoke(init_cmd, input=user_input)
+
+        # THEN we should receive no errors
+        self.assertFalse(result.exception)
+        generate_project_patch.assert_called_once_with(
+            # need to change the location validation check
+            ProjectTypes.CDK,
             "foo",
             ZIP,
             None,
@@ -1071,9 +1247,11 @@ foo
     def test_init_cli_no_package_type(self, generate_project_patch, cd_mock):
         # WHEN the user follows interactive init prompts
 
+        # 1: Project type: SAM
         # 1: selecting template source
         # 2s: selecting package type
         user_input = """
+1
 1
 2
 1
@@ -1093,6 +1271,7 @@ foo
         # THEN we should receive no errors
         self.assertFalse(result.exception)
         generate_project_patch.assert_called_once_with(
+            ProjectTypes.CFN,
             ANY,
             IMAGE,
             "python3.8",

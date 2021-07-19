@@ -3,9 +3,10 @@ Hash calculation utilities for files and directories.
 """
 import os
 import hashlib
-from typing import List, Optional
+import logging
 
 BLOCK_SIZE = 4096
+LOG = logging.getLogger(__name__)
 
 
 def file_checksum(file_name: str) -> str:
@@ -71,8 +72,12 @@ def dir_checksum(directory: str, followlinks: bool = True, ignore_list: Optional
     files.sort()
     for file in files:
         md5_dir.update(os.path.relpath(file, directory).encode("utf-8"))
-        filepath_checksum = file_checksum(file)
-        md5_dir.update(filepath_checksum.encode("utf-8"))
+        try:
+            filepath_checksum = file_checksum(file)
+            if filepath_checksum is not None:
+                md5_dir.update(filepath_checksum.encode("utf-8"))
+        except FileNotFoundError:
+            LOG.debug("File %s got deleted while calculating the hash", file)
 
     return md5_dir.hexdigest()
 

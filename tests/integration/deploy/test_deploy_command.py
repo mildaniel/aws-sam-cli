@@ -313,8 +313,7 @@ class TestDeploy(PackageIntegBase, DeployIntegBase):
         self.assertEqual(deploy_process_execute.process.returncode, 1)
         self.assertIn(
             bytes(
-                f"S3 Bucket not specified, use --s3-bucket to specify a bucket name, or use --resolve-s3 \
-to create a managed default bucket, or run sam deploy --guided",
+                f"Cannot skip both --resolve-s3 and --s3-bucket parameters. Please provide one of these arguments.",
                 encoding="utf-8",
             ),
             deploy_process_execute.stderr,
@@ -329,6 +328,7 @@ to create a managed default bucket, or run sam deploy --guided",
             template_file=template_path,
             capabilities="CAPABILITY_IAM",
             s3_prefix="integ_deploy",
+            s3_bucket=self.s3_bucket.name,
             force_upload=True,
             notification_arns=self.sns_arn,
             parameter_overrides="Parameter=Clarity",
