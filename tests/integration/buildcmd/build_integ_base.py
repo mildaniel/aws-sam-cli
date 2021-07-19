@@ -185,7 +185,11 @@ class BuildIntegRubyBase(BuildIntegBase):
 
     FUNCTION_LOGICAL_ID = "Function"
 
-    def _test_with_default_gemfile(self, runtime, use_container, code_uri, relative_path):
+    def _test_with_default_gemfile(self, runtime, use_container, code_uri, relative_path, expected_artifacts=None):
+
+        if expected_artifacts is None:
+            expected_artifacts = self.EXPECTED_FILES_PROJECT_MANIFEST
+
         overrides = {"Runtime": runtime, "CodeUri": code_uri, "Handler": "ignored"}
         cmdlist = self.get_command_list(use_container=use_container, parameter_overrides=overrides)
 
@@ -196,7 +200,7 @@ class BuildIntegRubyBase(BuildIntegBase):
         self._verify_built_artifact(
             self.default_build_dir,
             self.FUNCTION_LOGICAL_ID,
-            self.EXPECTED_FILES_PROJECT_MANIFEST,
+            expected_artifacts,
             self.EXPECTED_RUBY_GEM,
         )
 
@@ -238,8 +242,7 @@ class BuildIntegRubyBase(BuildIntegBase):
         self._verify_resource_property(str(template_path), function_logical_id, "CodeUri", function_logical_id)
 
         all_artifacts = set(os.listdir(str(resource_artifact_dir)))
-        actual_files = all_artifacts.intersection(expected_files)
-        self.assertEqual(actual_files, expected_files)
+        self.assertEqual(all_artifacts, expected_files)
 
         ruby_version = None
         ruby_bundled_path = None

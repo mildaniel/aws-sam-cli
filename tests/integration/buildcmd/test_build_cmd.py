@@ -284,16 +284,22 @@ class TestBuildCommand_NodeFunctions(BuildIntegBase):
     "Skip build tests on windows when running in CI unless overridden",
 )
 class TestBuildCommand_RubyFunctions(BuildIntegRubyBase):
+    EXPECTED_ARTIFACTS = {"app.rb", "Gemfile", "Gemfile.lock", ".bundle", "vendor"}
+
     @parameterized.expand(["ruby2.5", "ruby2.7"])
     @pytest.mark.flaky(reruns=3)
     @skipIf(SKIP_DOCKER_TESTS, SKIP_DOCKER_MESSAGE)
     def test_building_ruby_in_container(self, runtime):
-        self._test_with_default_gemfile(runtime, "use_container", "Ruby", self.test_data_path)
+        self._test_with_default_gemfile(
+            runtime, "use_container", "Ruby", self.test_data_path, expected_artifacts=self.EXPECTED_ARTIFACTS
+        )
 
     @parameterized.expand(["ruby2.5", "ruby2.7"])
     @pytest.mark.flaky(reruns=3)
     def test_building_ruby_in_process(self, runtime):
-        self._test_with_default_gemfile(runtime, False, "Ruby", self.test_data_path)
+        self._test_with_default_gemfile(
+            runtime, False, "Ruby", self.test_data_path, expected_artifacts=self.EXPECTED_ARTIFACTS
+        )
 
 
 @skipIf(
@@ -331,6 +337,21 @@ class TestBuildCommand_RubyFunctionsWithGemfileInTheRoot(BuildIntegRubyBase):
         shutil.copyfile(Path(self.template_path), Path(self.working_dir).joinpath("template.yaml"))
         # update template path with new location
         self.template_path = str(Path(self.working_dir).joinpath("template.yaml"))
+
+
+@skipIf(
+    ((IS_WINDOWS and RUNNING_ON_CI) and not CI_OVERRIDE),
+    "Skip build tests on windows when running in CI unless overridden",
+)
+class TestBuildCommand_RubyFunctionsWithoutGemfile(BuildIntegRubyBase):
+    """
+    Tests use case where Gemfile isn't present anywhere in the project.
+    Should copy source correctly without building any dependencies.
+    """
+    @parameterized.expand([("ruby2.5"), ("ruby2.7")])
+    @pytest.mark.flaky(reruns=3)
+    def test_building_ruby_in_process_with_root_gemfile(self, runtime):
+        self._test_with_default_gemfile(runtime, False, "RubyWithRootGemfile", self.test_data_path)
 
 
 @skipIf(
