@@ -14,7 +14,7 @@ from click.testing import CliRunner
 from samcli.commands.exceptions import UserException
 from samcli.commands.init import cli as init_cmd
 from samcli.commands.init import do_cli as init_cli
-from samcli.lib.iac.interface import ProjectTypes
+from samcli.lib.iac.plugins_interfaces import ProjectTypes
 from samcli.commands.init.init_templates import InitTemplates, APP_TEMPLATES_REPO_URL
 from samcli.lib.init import GenerateProjectFailedError
 from samcli.lib.utils import osutils

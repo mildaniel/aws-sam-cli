@@ -46,7 +46,13 @@ from samcli.lib.package.utils import (
 )
 from samcli.lib.utils.packagetype import ZIP
 from samcli.yamlhelper import yaml_dump
-from samcli.lib.iac.interface import Stack as IacStack, IacPlugin, Resource as IacResource, DictSectionItem, S3Asset
+from samcli.lib.iac.plugins_interfaces import (
+    Stack as IacStack,
+    IaCPluginInterface as IacPlugin,
+    Resource as IacResource,
+    DictSectionItem,
+    S3Asset,
+)
 
 
 # NOTE: sriram-mv, A cyclic dependency on `Template` needs to be broken.
@@ -248,7 +254,7 @@ class Template:
         self._apply_global_values()
         self._export_global_artifacts(self.template_dict)
 
-        for resource in self.template_dict["Resources"].values():  # type: ignore
+        for resource in self.template_dict["Resources"].values():
 
             resource_type = resource.get("Type", None)
             resource_dict = resource.get("Properties", {})

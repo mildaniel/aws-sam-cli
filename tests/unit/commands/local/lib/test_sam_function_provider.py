@@ -6,7 +6,7 @@ from unittest.mock import patch, PropertyMock, Mock, call
 from parameterized import parameterized
 
 from samcli.commands.local.cli_common.user_exceptions import InvalidLayerVersionArn
-from samcli.lib.iac.interface import Stack as IacStack, DictSection, Resource
+from samcli.lib.iac.plugins_interfaces import Stack as IacStack, DictSection, Resource
 from samcli.lib.providers.provider import Function, LayerVersion, Stack
 from samcli.lib.providers.sam_function_provider import SamFunctionProvider
 from samcli.lib.providers.exceptions import InvalidLayerReference

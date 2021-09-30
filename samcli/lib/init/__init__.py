@@ -15,7 +15,7 @@ from samcli.lib.utils.packagetype import ZIP
 from samcli.lib.utils import osutils
 from .exceptions import GenerateProjectFailedError, InvalidLocationError
 from .arbitrary_project import generate_non_cookiecutter_project
-from ..iac.interface import ProjectTypes
+from ..iac.plugins_interfaces import ProjectTypes
 
 LOG = logging.getLogger(__name__)
 

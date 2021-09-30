@@ -10,7 +10,7 @@ from collections import namedtuple
 from typing import Set, NamedTuple, Optional, List, Dict, Union, cast, Iterator, TYPE_CHECKING
 
 from samcli.commands.local.cli_common.user_exceptions import InvalidLayerVersionArn, UnsupportedIntrinsic
-from samcli.lib.iac.interface import Stack as IacStack, DictSection
+from samcli.lib.iac.plugins_interfaces import Stack as IacStack, DictSection
 from samcli.lib.providers.sam_base_provider import SamBaseProvider
 
 if TYPE_CHECKING:

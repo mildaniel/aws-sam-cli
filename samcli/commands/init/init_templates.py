@@ -13,7 +13,7 @@ import click
 
 from samcli.cli.main import global_cfg
 from samcli.commands.exceptions import UserException, AppTemplateUpdateException
-from samcli.lib.iac.interface import ProjectTypes
+from samcli.lib.iac.plugins_interfaces import ProjectTypes
 from samcli.lib.utils.git_repo import GitRepo, CloneRepoException, CloneRepoUnstableStateException
 from samcli.lib.utils.packagetype import IMAGE
 from samcli.local.common.runtime_template import RUNTIME_DEP_TEMPLATE_MAPPING, get_local_lambda_images_location

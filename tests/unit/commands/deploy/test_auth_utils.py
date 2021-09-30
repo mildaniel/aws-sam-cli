@@ -3,7 +3,7 @@ from collections import OrderedDict
 from unittest import TestCase
 
 from samcli.commands.deploy.auth_utils import auth_per_resource
-from samcli.lib.iac.interface import Stack as IacStack
+from samcli.lib.iac.plugins_interfaces import Stack as IacStack
 from samcli.lib.providers.provider import Stack
 
 

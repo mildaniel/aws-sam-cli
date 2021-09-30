@@ -1,9 +1,11 @@
 from copy import deepcopy
+
+from samcli.commands._utils.iac_project_validator import IacProjectValidator
 from samcli.lib.utils.packagetype import IMAGE, ZIP
 from unittest import TestCase
 from unittest.mock import patch, Mock, MagicMock
 
-from samcli.lib.iac.interface import (
+from samcli.lib.iac.plugins_interfaces import (
     DictSection,
     DictSectionItem,
     Environment,
@@ -217,7 +219,7 @@ class TestDictSection(TestCase):
         dict_section = DictSection(section_name="name", items=[dict_section_item])
         self.assertEqual(dict_section.section_items, [dict_section_item])
 
-    @patch("samcli.lib.iac.interface.deepcopy")
+    @patch("samcli.lib.iac.plugins_interfaces.deepcopy")
     def test_copy(self, deepcopy_mock):
         expected = Mock()
         deepcopy_mock.return_value = expected
@@ -235,7 +237,7 @@ class TestResource(TestCase):
         resource.nested_stack = stack
         self.assertEqual(resource.nested_stack, stack)
 
-    @patch("samcli.lib.iac.interface.deepcopy")
+    @patch("samcli.lib.iac.plugins_interfaces.deepcopy")
     def test_copy(self, deepcopy_mock):
         expected = Mock()
         deepcopy_mock.return_value = deepcopy_mock.return_value = expected
@@ -246,16 +248,16 @@ class TestResource(TestCase):
     def test_packageable(self):
         resource = Resource(key="key")
         resource["Type"] = "AWS::Serverless::Function"
-        self.assertTrue(resource.is_packageable())
+        self.assertTrue(IacProjectValidator.is_packageable(resource))
 
     def test_not_packageable(self):
         resource = Resource(key="key")
         resource["Type"] = "AWS::APIGateway::Stage"
-        self.assertFalse(resource.is_packageable())
+        self.assertFalse(IacProjectValidator.is_packageable(resource))
 
         resource = Resource(key="key")
         resource["Properties"] = {"InlineCode": "inline_code"}
-        self.assertFalse(resource.is_packageable())
+        self.assertFalse(IacProjectValidator.is_packageable(resource))
 
 
 class TestParamater(TestCase):
@@ -265,7 +267,7 @@ class TestParamater(TestCase):
         parameter.added_by_iac = True
         self.assertTrue(parameter.added_by_iac)
 
-    @patch("samcli.lib.iac.interface.deepcopy")
+    @patch("samcli.lib.iac.plugins_interfaces.deepcopy")
     def test_copy(self, deepcopy_mock):
         expected = Mock()
         deepcopy_mock.return_value = deepcopy_mock.return_value = expected
@@ -278,7 +280,7 @@ class TestStack(TestCase):
     def setUp(self):
         asset = S3Asset()
 
-    @patch("samcli.lib.iac.interface.deepcopy")
+    @patch("samcli.lib.iac.plugins_interfaces.deepcopy")
     def test_copy(self, deepcopy_mock):
         expected = Mock()
         deepcopy_mock.return_value = deepcopy_mock.return_value = expected

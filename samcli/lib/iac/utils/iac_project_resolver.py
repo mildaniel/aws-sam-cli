@@ -10,9 +10,16 @@ from typing import List, Tuple, Optional
 from click import Context
 import click
 
-from samcli.lib.iac.cdk.plugin import CdkPlugin
-from samcli.lib.iac.cfn_iac import CfnIacPlugin
-from samcli.lib.iac.interface import ProjectTypes, IacPlugin, Project, LookupPath, LookupPathType
+from samcli.lib.iac.cdk.cdk_iac import CdkIacImplementation as CdkPlugin
+from samcli.lib.iac.cfn.cfn_iac import CfnIacImplementation as CfnIacPlugin
+from samcli.lib.iac.plugins_interfaces import (
+    ProjectTypes,
+    IaCPluginInterface as IacPlugin,
+    SamCliProject as Project,
+    LookupPath,
+    LookupPathType,
+    SamCliContext,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -128,7 +135,15 @@ class IacProjectResolver:
                 message=f"{project_type} is invalid project type option value, the value should be one"
                 f"of the following {[ptype.value for ptype in ProjectTypes]} ",
             )
-        iac_plugin = iac_plugins[project_type](command_params)
+        sam_context = SamCliContext(
+            command_options_map=command_params,
+            sam_command_name="",
+            is_guided=False,
+            is_debugging=False,
+            region="",
+            profile={},
+        )
+        iac_plugin = iac_plugins[project_type](sam_context)
         lookup_paths = []
 
         if with_build:
@@ -139,6 +154,6 @@ class IacProjectResolver:
             build_dir = command_params.get("build_dir", DEFAULT_BUILD_DIR)
             lookup_paths.append(LookupPath(build_dir, LookupPathType.BUILD))
         lookup_paths.append(LookupPath(str(pathlib.Path.cwd()), LookupPathType.SOURCE))
-        project = iac_plugin.get_project(lookup_paths)
+        project = iac_plugin.read_project(lookup_paths)
 
         return iac_plugin, project

@@ -5,10 +5,10 @@ import logging
 import posixpath
 from typing import List, Dict, Optional
 
+from samcli.lib.iac.plugins_interfaces import S3Asset
 from .provider import LayerVersion, Stack
 from .sam_base_provider import SamBaseProvider
 from .sam_stack_provider import SamLocalStackProvider
-from ..iac.interface import S3Asset
 
 LOG = logging.getLogger(__name__)
 

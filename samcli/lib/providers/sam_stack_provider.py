@@ -7,7 +7,7 @@ import posixpath
 from typing import Optional, Dict, cast, List, Iterator, Tuple
 from urllib.parse import unquote, urlparse
 
-from samcli.lib.iac.interface import Stack as IacStack, Resource as IacResource, S3Asset
+from samcli.lib.iac.plugins_interfaces import Stack as IacStack, Resource as IacResource, S3Asset
 from samcli.lib.providers.exceptions import RemoteStackLocationNotSupported
 from samcli.lib.providers.provider import Stack, get_full_path
 from samcli.lib.providers.sam_base_provider import SamBaseProvider

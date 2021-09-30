@@ -10,7 +10,7 @@ from samcli.commands._utils.iac_project_validator import IacProjectValidator
 from samcli.commands._utils.options import plugin_additional_options
 from samcli.commands.local.cli_common.options import invoke_common_options, local_common_options
 from samcli.commands.local.lib.exceptions import InvalidIntermediateImageError
-from samcli.lib.iac.interface import IacPlugin, Project
+from samcli.lib.iac.plugins_interfaces import IaCPluginInterface as IacPlugin, SamCliProject as Project
 
 from samcli.lib.iac.utils.iac_project_resolver import IacProjectResolver
 from samcli.lib.telemetry.metric import track_command

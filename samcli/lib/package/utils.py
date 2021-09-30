@@ -20,7 +20,7 @@ from samcli.commands.package.exceptions import ImageNotFoundError
 from samcli.lib.package.ecr_utils import is_ecr_url
 from samcli.lib.package.s3_uploader import S3Uploader
 from samcli.lib.utils.hash import dir_checksum
-from samcli.lib.iac.interface import S3Asset as IacS3Asset
+from samcli.lib.iac.plugins_interfaces import S3Asset as IacS3Asset
 
 LOG = logging.getLogger(__name__)
 

@@ -17,7 +17,6 @@ from unittest import TestCase
 from unittest.mock import patch, ANY, Mock, MagicMock
 import logging
 
-from samcli.lib.iac.interface import ProjectTypes
 from samcli.lib.utils.packagetype import ZIP, IMAGE
 
 LOG = logging.getLogger()

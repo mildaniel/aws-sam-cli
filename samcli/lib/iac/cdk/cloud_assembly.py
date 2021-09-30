@@ -13,7 +13,7 @@ from typing import (
 )
 
 from samcli.commands._utils.template import update_relative_paths, get_template_data
-from samcli.lib.iac.cfn_iac import NESTED_STACKS_RESOURCES
+from samcli.lib.iac.cfn.cfn_iac import NESTED_STACKS_RESOURCES
 from samcli.lib.utils.packagetype import IMAGE
 from samcli.lib.samlib.resource_metadata_normalizer import (
     ASSET_PATH_METADATA_KEY,

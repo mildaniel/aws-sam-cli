@@ -11,8 +11,7 @@ from pathlib import Path, WindowsPath
 
 from parameterized import parameterized
 
-from samcli.lib.build.build_graph import FunctionBuildDefinition, LayerBuildDefinition
-from samcli.lib.iac.interface import Stack as IacStack, S3Asset
+from samcli.lib.iac.plugins_interfaces import Stack as IacStack, S3Asset
 from samcli.lib.providers.provider import ResourcesToBuildCollector
 from samcli.lib.build.app_builder import (
     ApplicationBuilder,

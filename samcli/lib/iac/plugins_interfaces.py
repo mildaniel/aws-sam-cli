@@ -6,20 +6,14 @@ Provide IAC Plugins Interface && Project representation
 
 import abc
 from collections import OrderedDict
-from collections.abc import Callable, Mapping, MutableMapping
+from collections.abc import Mapping, MutableMapping
 from copy import deepcopy
 from enum import Enum
-from typing import List, Any, Dict, Iterator, Optional
+from typing import List, Any, Dict, Iterator, Optional, Union
 from uuid import uuid4
 import logging
 
-from samcli.commands._utils.resources import (
-    AWS_LAMBDA_FUNCTION,
-    AWS_SERVERLESS_FUNCTION,
-    RESOURCES_WITH_IMAGE_COMPONENT,
-    RESOURCES_WITH_LOCAL_PATHS,
-    NESTED_STACKS_RESOURCES,
-)
+from samcli.commands._utils.resources import AWS_SERVERLESS_FUNCTION, AWS_LAMBDA_FUNCTION
 from samcli.lib.utils.packagetype import IMAGE, ZIP
 
 LOG = logging.getLogger(__name__)
@@ -329,12 +323,12 @@ class SimpleSectionItem(SectionItem):
     def value(self, value: Any) -> None:
         self._value = value
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._value)
 
 
 # pylint: disable=R0901
-class DictSectionItem(SectionItem, MutableMapping):
+class DictSectionItem(SectionItem, MutableMapping, OrderedDict):
     def __init__(
         self,
         key: Optional[str] = None,
@@ -374,7 +368,7 @@ class DictSectionItem(SectionItem, MutableMapping):
     def extra_details(self, extra_details: Dict[str, Any]) -> None:
         self._extra_details = extra_details
 
-    def is_packageable(self):
+    def is_packageable(self) -> bool:
         """
         return if the resource is packageable
         """
@@ -403,7 +397,7 @@ class DictSectionItem(SectionItem, MutableMapping):
     def __iter__(self) -> Iterator:
         return iter(self._body)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._body)
 
 
@@ -429,12 +423,12 @@ class SimpleSection(Section):
     def value(self, value: Any) -> None:
         self._value = value
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._value)
 
 
 # pylint: disable=R0901
-class DictSection(Section, MutableMapping):
+class DictSection(Section, MutableMapping, OrderedDict):
     def __init__(self, section_name: Optional[str] = None, items: Optional[List[SectionItem]] = None):
         self._items_dict = OrderedDict()
         if items:
@@ -446,7 +440,7 @@ class DictSection(Section, MutableMapping):
         return deepcopy(self)
 
     @property
-    def section_items(self) -> List[DictSectionItem]:
+    def section_items(self) -> List[SectionItem]:
         return list(self._items_dict.values())
 
     def __setitem__(self, k: str, v: Any) -> None:
@@ -457,7 +451,8 @@ class DictSection(Section, MutableMapping):
                 "Resources": Resource,
                 "Parameters": Parameter,
             }
-            item_class = section_item_classes.get(self._section_name, DictSectionItem)
+            class_name = self._section_name or ""
+            item_class = section_item_classes.get(class_name, DictSectionItem)
             item = item_class(key=k, body=v)
             self._items_dict[k] = item
         else:
@@ -466,7 +461,7 @@ class DictSection(Section, MutableMapping):
     def __delitem__(self, v: str) -> None:
         del self._items_dict[v]
 
-    def __getitem__(self, k: str) -> DictSectionItem:
+    def __getitem__(self, k: str) -> Any:
         v = self._items_dict[k]
         if isinstance(v, SimpleSectionItem):
             return v.value
@@ -478,7 +473,7 @@ class DictSection(Section, MutableMapping):
     def __iter__(self) -> Iterator:
         return iter(self._items_dict)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._items_dict)
 
 
@@ -499,7 +494,7 @@ class Resource(DictSectionItem):
         self._nested_stack = nested_stack
         super().__init__(key, item_id, body, assets, extra_details)
 
-    def copy(self):
+    def copy(self) -> "Resource":
         return deepcopy(self)
 
     @property
@@ -528,7 +523,7 @@ class Parameter(DictSectionItem):
         self._added_by_iac = added_by_iac
         super().__init__(key, item_id, body, assets, extra_details)
 
-    def copy(self) -> "Resource":
+    def copy(self) -> "Parameter":
         return deepcopy(self)
 
     @property
@@ -541,7 +536,7 @@ class Parameter(DictSectionItem):
 
 
 # pylint: disable=R0901
-class Stack(MutableMapping):
+class Stack(MutableMapping, OrderedDict):
     """
     Represents IaC Stack
     """
@@ -645,17 +640,33 @@ class Stack(MutableMapping):
         }
         return any(isinstance(asset, package_type_to_asset_cls_map[package_type]) for asset in self.assets)
 
-    def get_overrideable_parameters(self):
+    def get_overrideable_parameters(self) -> Dict:
         """
         Return a dict of parameters that are override-able, i.e. not added by iac
         """
         return {key: val for key, val in self.get("Parameters", {}).items() if not val.added_by_iac}
 
-    def as_dict(self):
+    def as_dict(self) -> Union[MutableMapping, Mapping, OrderedDict]:
         """
         return the stack as a dict for JSON serialization
         """
         return _make_dict(self)
+
+    # TODO: Move this function somewhere more appropriate when refactoring deploy command
+    def find_function_resources_of_package_type(self, package_type: str) -> List[Resource]:
+        package_type_to_asset_cls_map = {
+            ZIP: S3Asset,
+            IMAGE: ImageAsset,
+        }
+        _function_resources = []
+        for _, resource in self.get("Resources", DictSection()).items():
+            if (
+                resource.get("Type", "") in [AWS_SERVERLESS_FUNCTION, AWS_LAMBDA_FUNCTION]
+                and resource.assets
+                and isinstance(resource.assets[0], package_type_to_asset_cls_map[package_type])
+            ):
+                _function_resources.append(resource)
+        return _function_resources
 
     def __setitem__(self, k: str, v: Any) -> None:
         if isinstance(v, dict):
@@ -671,7 +682,7 @@ class Stack(MutableMapping):
     def __delitem__(self, v: str) -> None:
         del self._sections[v]
 
-    def __getitem__(self, k: str) -> Section:
+    def __getitem__(self, k: str) -> Any:
         v = self._sections[k]
         if isinstance(v, SimpleSection):
             return v.value
@@ -683,7 +694,7 @@ class Stack(MutableMapping):
     def __iter__(self) -> Iterator:
         return iter(self._sections)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self._sections)
 
 
@@ -721,7 +732,7 @@ class SamCliProject:
     def extra_details(self, extra_details: Dict[str, Any]) -> None:
         self._extra_details = extra_details
 
-    def find_stack_by_name(self, name: str):
+    def find_stack_by_name(self, name: str) -> Optional["Stack"]:
         for stack in self.stacks:
             if stack.name == name:
                 return stack
@@ -778,7 +789,7 @@ class SamCliContext:
         self._region = region
 
     @property
-    def command_options_map(self):
+    def command_options_map(self) -> Dict[str, Any]:
         """
         the context retrieved from command line, its key is the command line option
         name, value is corresponding input
@@ -786,23 +797,23 @@ class SamCliContext:
         return self._command_options_map
 
     @property
-    def sam_command_name(self):
+    def sam_command_name(self) -> str:
         return self._sam_command_name
 
     @property
-    def is_guided(self):
+    def is_guided(self) -> bool:
         return self._is_guided
 
     @property
-    def is_debugging(self):
+    def is_debugging(self) -> bool:
         return self._is_debugging
 
     @property
-    def profile(self):
+    def profile(self) -> Optional[Dict[str, Any]]:
         return self._profile
 
     @property
-    def region(self):
+    def region(self) -> Optional[str]:
         return self._region
 
 
@@ -847,7 +858,7 @@ class IaCPluginInterface(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-def _make_dict(obj):
+def _make_dict(obj: Union[MutableMapping, Mapping]) -> Union[MutableMapping, Mapping]:
     if not isinstance(obj, MutableMapping):
         return obj
     to_return = dict()

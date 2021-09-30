@@ -1,26 +1,22 @@
 import os
 from samcli.commands._utils.template import TemplateFormat
-import shutil
 import subprocess
-from pathlib import Path
-from typing import Dict, Mapping
 
 from unittest import TestCase
 from unittest.mock import ANY, Mock, mock_open, patch
 
-from samcli.lib.iac.interface import (
+from samcli.lib.iac.plugins_interfaces import (
     DictSection,
-    Project,
+    SamCliProject as Project,
     LookupPath,
     LookupPathType,
     Resource,
     S3Asset,
     ImageAsset,
-    SimpleSection,
-    Stack,
+    Stack, SamCliContext,
 )
-from samcli.lib.iac.cdk.plugin import (
-    CdkPlugin,
+from samcli.lib.iac.cdk.cdk_iac import (
+    CdkIacImplementation as CdkPlugin,
     _collect_assets,
     _write_stack,
     _shallow_clone_asset,
@@ -32,13 +28,6 @@ from samcli.lib.iac.cdk.plugin import (
     _get_cdk_executable_path,
 )
 from samcli.lib.iac.cdk.exceptions import CdkToolkitNotInstalledError, InvalidCloudAssemblyError
-from samcli.lib.iac.cdk.constants import (
-    MANIFEST_FILENAME,
-    TREE_FILENAME,
-    OUT_FILENAME,
-)
-
-from tests.unit.lib.iac.cdk.helper import read_json_file
 
 CLOUD_ASSEMBLY_DIR = os.path.join(os.path.dirname(__file__), "test_data", "cdk.out")
 
@@ -46,6 +35,14 @@ CLOUD_ASSEMBLY_DIR = os.path.join(os.path.dirname(__file__), "test_data", "cdk.o
 class TestCdkPlugin(TestCase):
     def setUp(self) -> None:
         self.command_params = {"cdk_app": CLOUD_ASSEMBLY_DIR}
+        self.context = SamCliContext(
+            command_options_map=self.command_params,
+            region="",
+            sam_command_name="",
+            is_debugging=False,
+            is_guided=False,
+            profile={},
+        )
         # self.cdk_synth_mock =
         # self.plugin = CdkPlugin(context)
         # self.project = self.plugin.get_project([LookupPath(os.path.dirname(__file__), LookupPathType.SOURCE)])
@@ -54,11 +51,11 @@ class TestCdkPlugin(TestCase):
     @patch("os.path.abspath", return_value="/path/to/cloud_assemble")
     @patch("os.path.exists", return_value=True)
     def test_get_project_build_type_lookup_path(self, path_exists_mock, abspath_mock, is_file_mock):
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         cdk_plugin._get_project_from_cloud_assembly = Mock()
         cdk_plugin._get_project_from_cloud_assembly.return_value = Project(stacks=[Mock(), Mock()])
 
-        project = cdk_plugin.get_project([LookupPath("lookup/path", LookupPathType.BUILD)])
+        project = cdk_plugin.read_project([LookupPath("lookup/path", LookupPathType.BUILD)])
         cdk_plugin._get_project_from_cloud_assembly.assert_called_once_with(abspath_mock.return_value)
         self.assertIsInstance(project, Project)
         self.assertEqual(len(project.stacks), 2)
@@ -67,7 +64,7 @@ class TestCdkPlugin(TestCase):
     @patch("os.path.abspath", return_value="/path/to/cloud_assemble")
     @patch("os.path.exists", return_value=True)
     def test_get_project_source_type_lookup_path(self, path_exists_mock, abspath_mock, is_file_mock):
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         cdk_plugin._get_project_from_cloud_assembly = Mock()
         cdk_plugin._get_project_from_cloud_assembly.return_value = Project(stacks=[Mock(), Mock()])
         cdk_plugin._cdk_synth = Mock()
@@ -81,7 +78,7 @@ class TestCdkPlugin(TestCase):
 
     @patch("os.path.isfile", return_value=True)
     def test_get_project_invalid_lookup_path(self, is_file_mock):
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
 
         with self.assertRaises(InvalidCloudAssemblyError):
             cdk_plugin.get_project([])
@@ -90,7 +87,7 @@ class TestCdkPlugin(TestCase):
     @patch("samcli.lib.iac.cdk.plugin._update_built_artifacts")
     @patch("samcli.lib.iac.cdk.plugin._write_stack")
     def test_write_project(self, write_stack_mock, update_built_artifacts_mock, copy2_mock):
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         project_mock = Mock()
         project_mock.stacks = [Mock()]
         build_dir = "build_dir"
@@ -104,12 +101,12 @@ class TestCdkPlugin(TestCase):
 
     def test_should_update_property_after_package(self):
         asset = ImageAsset()
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         self.assertTrue(cdk_plugin.should_update_property_after_package(asset))
 
     def test_should_not_update_property_after_package(self):
         asset = S3Asset()
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         self.assertFalse(cdk_plugin.should_update_property_after_package(asset))
 
     @patch("samcli.lib.iac.cdk.plugin._update_asset_params_default_values")
@@ -132,7 +129,7 @@ class TestCdkPlugin(TestCase):
         nested_stack_mock = Mock()
         resource_mock.nested_stack = nested_stack_mock
         resource_mock.assets = [asset]
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         original_func = cdk_plugin.update_asset_params_default_values_after_packaging
         cdk_plugin.update_asset_params_default_values_after_packaging = Mock()
         cdk_plugin.update_asset_params_default_values_after_packaging.side_effect = param_side_efftec_2
@@ -158,7 +155,7 @@ class TestCdkPlugin(TestCase):
         asset_mock.extra_details = {"assetParameters": {"foo": "bar"}}
         resource_mock.assets = [asset_mock]
 
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         cdk_plugin.update_resource_after_packaging(resource_mock)
         undo_normalize_resource_metadata_mock.assert_called_once_with(resource_mock)
 
@@ -169,7 +166,7 @@ class TestCdkPlugin(TestCase):
     def test_cdk_synth_app_is_executable_with_context(
         self, get_cdk_executable_path_mock, copy_tree_mock, isdir_mock, check_output_mock
     ):
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         app = "cdk_app_executable"
         context = ["key1=value1", "key2=value2"]
         cloud_assembly_dir = cdk_plugin._cdk_synth(app, context)
@@ -197,7 +194,7 @@ class TestCdkPlugin(TestCase):
     @patch("samcli.lib.iac.cdk.plugin.copy_tree")
     @patch("samcli.lib.iac.cdk.plugin._get_cdk_executable_path", return_value="cdk")
     def test_cdk_synth_app_is_dir(self, get_cdk_executable_path_mock, copy_tree_mock, isdir_mock, check_output_mock):
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         app = "path/to/cloud_assembly"
         cloud_assembly_dir = cdk_plugin._cdk_synth(app)
         check_output_mock.assert_called_once_with(
@@ -218,7 +215,7 @@ class TestCdkPlugin(TestCase):
     @patch("samcli.lib.iac.cdk.plugin.copy_tree")
     @patch("samcli.lib.iac.cdk.plugin._get_cdk_executable_path", return_value="cdk")
     def test_cdk_synth_app_is_none(self, get_cdk_executable_path_mock, copy_tree_mock, isdir_mock, check_output_mock):
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         app = None
         cloud_assembly_dir = cdk_plugin._cdk_synth(app)
         check_output_mock.assert_called_once_with(
@@ -239,7 +236,7 @@ class TestCdkPlugin(TestCase):
         cloud_assembly_mock = Mock()
         cloud_assembly_mock.stacks = [Mock(), Mock()]
         cloud_assembly_class_mock.return_value = cloud_assembly_mock
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         build_stack_mock = Mock()
         stack_mock1 = Mock()
         stack_mock2 = Mock()
@@ -270,7 +267,7 @@ class TestCdkPlugin(TestCase):
         image_asset = ImageAsset()
         assets = {"s3/asset": s3_asset, "image/asset": image_asset}
         collect_assets_mock.return_value = assets
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         cdk_plugin._build_resources_section = Mock()
         stack = cdk_plugin._build_stack(cloud_assembly_mock, ca_stack_mock)
         cdk_plugin._build_resources_section.assert_called_once_with(assets, ca_stack_mock, cloud_assembly_mock, ANY, {})
@@ -309,7 +306,7 @@ class TestCdkPlugin(TestCase):
         node_mock.is_l2_construct_resource.return_value = False
         cloud_assembly_mock.tree.find_node_by_path.return_value = node_mock
 
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         cdk_plugin._build_resources_section(assets, ca_stack_mock, cloud_assembly_mock, dict_section, section_dict)
         self.assertTrue("logical_id" in dict_section)
         resource = dict_section["logical_id"]
@@ -345,7 +342,7 @@ class TestCdkPlugin(TestCase):
         node_mock.is_l2_construct_resource.return_value = False
         cloud_assembly_mock.tree.find_node_by_path.return_value = node_mock
 
-        cdk_plugin = CdkPlugin(self.command_params)
+        cdk_plugin = CdkPlugin(self.context)
         cdk_plugin._build_stack = Mock()
         cdk_plugin._build_stack.return_value = Mock()
         cdk_plugin._build_resources_section(assets, ca_stack_mock, cloud_assembly_mock, dict_section, section_dict)
@@ -400,8 +397,8 @@ class TestWriteStack(TestCase):
         self.original_func = _write_stack
 
     @patch("os.path.join", side_effect=["src_template_path", "stack_build_location", "build_dir/nested_stack"])
-    @patch("samcli.lib.iac.cdk.plugin._undo_normalize_resource_metadata")
-    @patch("samcli.lib.iac.cdk.plugin.move_template")
+    @patch("samcli.lib.iac.cdk.cdk_iac._undo_normalize_resource_metadata")
+    @patch("samcli.lib.iac.cdk.cdk_iac.move_template")
     def test_write_stack_s3_asset(self, move_template_mock, undo_normalize_mock, path_join_mock):
         stack = Stack(stack_id="test_stack")
         stack["Resources"] = DictSection("Resources")
@@ -433,8 +430,8 @@ class TestWriteStack(TestCase):
         )
 
     @patch("os.path.join", side_effect=["src_template_path", "stack_build_location", "build_dir/nested_stack"])
-    @patch("samcli.lib.iac.cdk.plugin._undo_normalize_resource_metadata")
-    @patch("samcli.lib.iac.cdk.plugin.move_template")
+    @patch("samcli.lib.iac.cdk.cdk_iac._undo_normalize_resource_metadata")
+    @patch("samcli.lib.iac.cdk.cdk_iac.move_template")
     def test_write_stack_image_asset(self, move_template_mock, undo_normalize_mock, path_join_mock):
         stack = Stack(stack_id="test_stack")
         stack["Resources"] = DictSection("Resources")
@@ -467,9 +464,9 @@ class TestWriteStack(TestCase):
         )
 
     @patch("os.path.join", side_effect=["src_template_path", "stack_build_location", "build_dir/nested_stack"])
-    @patch("samcli.lib.iac.cdk.plugin._undo_normalize_resource_metadata")
-    @patch("samcli.lib.iac.cdk.plugin.move_template")
-    @patch("samcli.lib.iac.cdk.plugin._write_stack")
+    @patch("samcli.lib.iac.cdk.cdk_iac._undo_normalize_resource_metadata")
+    @patch("samcli.lib.iac.cdk.cdk_iac.move_template")
+    @patch("samcli.lib.iac.cdk.cdk_iac._write_stack")
     def test_write_stack_s3_asset_nested_stack(
         self, write_stack_mock, move_template_mock, undo_normalize_mock, path_join_mock
     ):
@@ -537,7 +534,7 @@ class TestCollectStackAssets(TestCase):
         self.assertEqual(collected["s3"], s3_asset)
         self.assertEqual(collected["image"], image_asset)
 
-    @patch("samcli.lib.iac.cdk.plugin._collect_stack_assets")
+    @patch("samcli.lib.iac.cdk.cdk_iac._collect_stack_assets")
     def test_collect_stack_assets_nested_stack(self, collect_stack_assets_mock):
         nested_stack_asset = S3Asset(asset_id="nested_stack")
         stack = Stack()
@@ -554,7 +551,7 @@ class TestCollectStackAssets(TestCase):
 
 class TestCollectProjectAssets(TestCase):
     @patch(
-        "samcli.lib.iac.cdk.plugin._collect_stack_assets",
+        "samcli.lib.iac.cdk.cdk_iac._collect_stack_assets",
         side_effect=[{"1": S3Asset(asset_id="1")}, {"2": ImageAsset(asset_id="2")}],
     )
     def test_collect_project_assets(self, collect_stack_assets_mock):

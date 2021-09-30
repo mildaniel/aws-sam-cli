@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, IO, cast, Tuple, Any
 
 from samcli.lib.utils import osutils
-from samcli.lib.iac.interface import IacPlugin, Project
+from samcli.lib.iac.plugins_interfaces import IaCPluginInterface as IacPlugin, SamCliProject as Project
 from samcli.lib.providers.provider import Stack, Function
 from samcli.lib.providers.sam_stack_provider import SamLocalStackProvider
 from samcli.lib.utils.async_utils import AsyncContext

@@ -53,7 +53,7 @@ from samcli.lib.package.packageable_resources import (
     ResourceImage,
     ResourceImageDict,
 )
-from samcli.lib.iac.interface import ImageAsset, Stack as IacStack, S3Asset, Resource as IacResource
+from samcli.lib.iac.plugins_interfaces import ImageAsset, Stack as IacStack, S3Asset, Resource as IacResource
 
 
 class TestArtifactExporter(unittest.TestCase):

@@ -8,7 +8,7 @@ import base64
 import re
 from collections import OrderedDict
 
-from samcli.lib.iac.interface import Resource, S3Asset, ImageAsset
+from samcli.lib.iac.plugins_interfaces import Resource, S3Asset, ImageAsset
 from samcli.lib.intrinsic_resolver.invalid_intrinsic_validation import (
     verify_intrinsic_type_list,
     verify_non_null,

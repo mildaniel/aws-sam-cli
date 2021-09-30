@@ -5,13 +5,13 @@ import logging
 from typing import Dict, List, Optional, cast, Iterator, Any
 
 from samcli.commands.local.cli_common.user_exceptions import InvalidLayerVersionArn
+from samcli.lib.iac.plugins_interfaces import S3Asset, Resource, ImageAsset
 from samcli.lib.providers.exceptions import InvalidLayerReference
 from samcli.lib.utils.colors import Colored
 from samcli.lib.utils.packagetype import ZIP, IMAGE
 from .provider import Function, LayerVersion, Stack
 from .sam_base_provider import SamBaseProvider
 from .sam_stack_provider import SamLocalStackProvider
-from ..iac.interface import S3Asset, Resource, ImageAsset
 
 LOG = logging.getLogger(__name__)
 

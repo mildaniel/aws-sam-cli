@@ -31,7 +31,7 @@ from samcli.lib.package.code_signer import CodeSigner
 from samcli.lib.package.s3_uploader import S3Uploader
 from samcli.lib.package.uploaders import Uploaders
 from samcli.lib.utils.botoconfig import get_boto_config_with_user_agent
-from samcli.lib.iac.interface import DictSection
+from samcli.lib.iac.plugins_interfaces import DictSection
 from samcli.yamlhelper import yaml_dump
 
 LOG = logging.getLogger(__name__)

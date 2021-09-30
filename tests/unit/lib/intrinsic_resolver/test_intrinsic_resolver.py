@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from parameterized import parameterized
 
-from samcli.lib.iac.interface import Resource, S3Asset, ImageAsset
+from samcli.lib.iac.plugins_interfaces import Resource, S3Asset, ImageAsset
 
 from samcli.lib.intrinsic_resolver.intrinsic_property_resolver import IntrinsicResolver
 from samcli.lib.intrinsic_resolver.intrinsics_symbol_table import IntrinsicsSymbolTable

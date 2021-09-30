@@ -26,7 +26,7 @@ import yaml
 # TODO: we need to double check whether they are public and stable
 from yaml.resolver import ScalarNode, SequenceNode  # type: ignore
 
-from samcli.lib.iac.interface import Stack, DictSection, DictSectionItem, Resource, Parameter
+from samcli.lib.iac.plugins_interfaces import Stack, DictSection, DictSectionItem, Resource, Parameter
 
 TAG_STR = "tag:yaml.org,2002:str"
 

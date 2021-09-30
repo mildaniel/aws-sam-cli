@@ -13,7 +13,7 @@ from samcli.commands.init.interactive_event_bridge_flow import (
     get_schemas_template_parameter,
 )
 from samcli.commands.exceptions import SchemasApiException
-from samcli.lib.iac.interface import ProjectTypes
+from samcli.lib.iac.plugins_interfaces import ProjectTypes
 from samcli.lib.schemas.schemas_code_manager import do_download_source_code_binding, do_extract_and_merge_schemas_code
 from samcli.local.common.runtime_template import (
     INIT_RUNTIMES,

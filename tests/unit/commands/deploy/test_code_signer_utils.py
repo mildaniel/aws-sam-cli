@@ -5,7 +5,7 @@ from samcli.commands.deploy.code_signer_utils import (
     extract_profile_name_and_owner_from_existing,
     signer_config_per_function,
 )
-from samcli.lib.iac.interface import Stack as IacStack
+from samcli.lib.iac.plugins_interfaces import Stack as IacStack
 from samcli.lib.providers.provider import Stack
 
 

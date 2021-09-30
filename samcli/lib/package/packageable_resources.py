@@ -9,7 +9,7 @@ from typing import Optional, Union
 from botocore.utils import set_value_from_jmespath
 
 from samcli.commands.package import exceptions
-from samcli.lib.iac.interface import S3Asset, ImageAsset, DictSectionItem, Resource as IacResource
+from samcli.lib.iac.plugins_interfaces import S3Asset, ImageAsset, DictSectionItem, Resource as IacResource
 from samcli.lib.package.ecr_uploader import ECRUploader
 from samcli.lib.package.s3_uploader import S3Uploader
 from samcli.lib.package.uploaders import Destination, Uploaders

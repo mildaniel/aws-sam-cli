@@ -40,7 +40,7 @@ from .exceptions import (
     UnsupportedBuilderLibraryVersionError,
 )
 from .workflow_config import get_workflow_config, get_layer_subfolder, supports_build_in_container, CONFIG
-from ..iac.interface import S3Asset, ImageAsset
+from ..iac.plugins_interfaces import S3Asset, ImageAsset
 
 LOG = logging.getLogger(__name__)
 

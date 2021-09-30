@@ -18,7 +18,7 @@ from samcli.commands._utils.options import (
 from samcli.cli.main import pass_context, common_options as cli_framework_options, aws_creds_options, print_cmdline_args
 from samcli.commands.build.build_constants import DEFAULT_BUILD_DIR, DEFAULT_CACHE_DIR
 from samcli.lib.build.exceptions import BuildInsideContainerError
-from samcli.lib.iac.interface import IacPlugin, Project
+from samcli.lib.iac.plugins_interfaces import IaCPluginInterface as IacPlugin, SamCliProject as Project
 from samcli.lib.iac.utils.iac_project_resolver import IacProjectResolver
 from samcli.lib.providers.sam_stack_provider import SamLocalStackProvider
 from samcli.lib.telemetry.metric import track_command

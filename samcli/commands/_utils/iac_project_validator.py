@@ -8,7 +8,12 @@ from click import Context
 
 from samcli.commands._utils.exceptions import PackageResolveS3AndS3SetError, PackageResolveS3AndS3NotSetError
 from samcli.commands._utils.option_validator import Validator
-from samcli.lib.iac.interface import ProjectTypes, Project
+from samcli.commands._utils.resources import (
+    NESTED_STACKS_RESOURCES,
+    RESOURCES_WITH_LOCAL_PATHS,
+    RESOURCES_WITH_IMAGE_COMPONENT,
+)
+from samcli.lib.iac.plugins_interfaces import ProjectTypes, SamCliProject as Project, Resource
 from samcli.lib.utils.packagetype import ZIP, IMAGE
 
 LOG = logging.getLogger(__name__)
@@ -104,6 +109,25 @@ class IacProjectValidator:
             raise PackageResolveS3AndS3SetError()
         if not guided and either_required and not s3_bucket_provided and not resolve_s3_provided:
             raise PackageResolveS3AndS3NotSetError()
+
+    @staticmethod
+    def is_packageable(resource: Resource):
+        """
+        return if the resource is packageable
+        NOTE: we probably want to include a condition to check if the resource is binded to a local asset
+        But in samcli.lib.package.utils.upload_local_artifacts, we handle a case where local_path is None,
+        we would build the parent_dir. This seems to only apply for CFN/SAM project, we can consider to move
+        that logic to CfnIacPlugin. For now, just keep it as is.
+        """
+        if "InlineCode" in resource.get("Properties", {}):  # type: ignore
+            return False
+        resource_type = resource.get("Type", None)  # type: ignore
+        packageable_resources = [
+            NESTED_STACKS_RESOURCES,
+            RESOURCES_WITH_LOCAL_PATHS,
+            RESOURCES_WITH_IMAGE_COMPONENT,
+        ]
+        return any(resource_type in p for p in packageable_resources)  # type: ignore
 
     def image_repository_validation(self):
         """

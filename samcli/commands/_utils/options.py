@@ -12,7 +12,7 @@ from click.types import FuncParamType
 from samcli.cli.types import CfnParameterOverridesType, CfnMetadataType, CfnTags, SigningProfilesOptionType
 from samcli.commands._utils.template import get_template_data, TemplateNotFoundException, get_template_artifacts_format
 from samcli.commands._utils.custom_options.option_nargs import OptionNargs
-from samcli.lib.iac.interface import ProjectTypes
+from samcli.lib.iac.plugins_interfaces import ProjectTypes
 
 _TEMPLATE_OPTION_DEFAULT_VALUE = "template.[yaml|yml|json]"
 DEFAULT_STACK_NAME = "sam-app"

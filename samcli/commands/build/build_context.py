@@ -8,7 +8,7 @@ import pathlib
 import shutil
 from typing import Dict, Optional, List
 
-from samcli.lib.iac.interface import IacPlugin, Project
+from samcli.lib.iac.plugins_interfaces import IaCPluginInterface as IacPlugin, SamCliProject as Project
 from samcli.commands.build.exceptions import InvalidBuildDirException, MissingBuildMethodException
 from samcli.lib.intrinsic_resolver.intrinsics_symbol_table import IntrinsicsSymbolTable
 from samcli.lib.providers.provider import ResourcesToBuildCollector, Stack, Function, LayerVersion

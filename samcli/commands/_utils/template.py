@@ -12,7 +12,7 @@ import yaml
 from botocore.utils import set_value_from_jmespath
 
 from samcli.commands.exceptions import UserException
-from samcli.lib.iac.interface import S3Asset, Stack as IacStack
+from samcli.lib.iac.plugins_interfaces import S3Asset, Stack as IacStack
 from samcli.lib.samlib.resource_metadata_normalizer import METADATA_KEY, ASSET_PATH_METADATA_KEY
 from samcli.lib.utils.packagetype import ZIP
 from samcli.yamlhelper import yaml_parse, yaml_dump

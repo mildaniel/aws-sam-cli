@@ -421,13 +421,3 @@ class TestGetCdkExecutablePath(TestCase):
     def test_get_cdk_executable_path_not_found(self, which_mock, system_mock):
         with self.assertRaises(CdkToolkitNotInstalledError):
             _get_cdk_executable_path()
-
-
-# TODO: Implement these tests when the classes are fully implemented
-# These tests are included for code coverage
-class TestImplementations(TestCase):
-    def test_cdk_implementation(self):
-        impl = CdkIacImplementation(Mock())
-        impl.update_packaged_locations(Mock())
-        impl.write_project(Mock(), Mock())
-        self.assertTrue(True)

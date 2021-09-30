@@ -19,7 +19,7 @@ from samcli.commands._utils.template import (
     get_template_artifacts_format,
     get_template_function_resource_ids,
 )
-from samcli.lib.iac.interface import Stack
+from samcli.lib.iac.plugins_interfaces import Stack
 from samcli.lib.utils.packagetype import IMAGE, ZIP
 
 
@@ -200,7 +200,7 @@ class Test_update_relative_paths(TestCase):
             result = update_relative_paths(template_dict, self.src, self.dest)
 
             self.maxDiff = None
-            self.assertDictEqual(result, expected_template_dict)
+            self.assertDictEqual(result.as_dict(), expected_template_dict.as_dict())
 
     def test_must_update_aws_include_also(self):
         template_dict = Stack()

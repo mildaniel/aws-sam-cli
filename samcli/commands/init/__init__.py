@@ -10,7 +10,7 @@ import click
 
 from samcli.cli.cli_config_file import configuration_option, TomlProvider
 from samcli.cli.main import pass_context, common_options, print_cmdline_args
-from samcli.lib.iac.interface import ProjectTypes
+from samcli.lib.iac.plugins_interfaces import ProjectTypes
 from samcli.lib.utils.version_checker import check_newer_version
 from samcli.local.common.runtime_template import (
     RUNTIMES,

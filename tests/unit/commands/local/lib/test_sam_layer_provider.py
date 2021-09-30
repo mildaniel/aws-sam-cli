@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from parameterized import parameterized
 
-from samcli.lib.iac.interface import Stack as IacStack
+from samcli.lib.iac.plugins_interfaces import Stack as IacStack
 from samcli.lib.providers.provider import LayerVersion, Stack
 from samcli.lib.providers.sam_layer_provider import SamLayerProvider
 
