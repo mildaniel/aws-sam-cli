@@ -3,13 +3,14 @@ import os
 from unittest import TestCase
 from unittest.mock import patch, Mock, ANY
 
+from samcli.commands._utils.template import TemplateFormat
 from samcli.commands.validate.lib.exceptions import InvalidSamDocumentException
-from samcli.lib.iac.cfn.cfn_iac import CfnIacImplementation
+from samcli.lib.iac.cfn.cfn_iac import CfnIacImplementation, _write_stack
 from samcli.lib.iac.plugins_interfaces import (
     SamCliContext,
     SamCliProject,
     Stack,
-    DictSectionItem,
+    DictSectionItem, DictSection, Resource, S3Asset, ImageAsset,
 )
 
 GENERIC_CFN_TEMPLATE = {
@@ -176,3 +177,114 @@ class TestCfnPlugin(TestCase):
         self.assertIsInstance(stack, Stack)
         self.assertEqual(code_uri, "/new/path/to/code")
         self.assertEqual(region, "us-east-2")
+
+
+class TestWriteStack(TestCase):
+    def setUp(self):
+        self.original_func = _write_stack
+
+    # @patch("os.path.join", side_effect=["src_template_path", "stack_build_location", "build_dir/nested_stack"])
+    @patch("samcli.lib.iac.cfn.cfn_iac.move_template")
+    def test_write_stack_s3_asset(self, move_template_mock):
+        stack = Stack(stack_id="test_stack")
+        stack["Resources"] = DictSection("Resources")
+        stack.extra_details["template_file"] = "template_file"
+        resource = Resource(
+            "Function1",
+            body={
+                "Type": "AWS::Lambda::Function",
+                "Properties": {},
+                "Metadata": {
+                    "aws:cdk:path": "stack/resouce",
+                    "aws:asset:path": "source_asset",
+                    "aws:asset:property": "Code",
+                },
+            },
+        )
+        stack["Resources"]["Function1"] = resource
+        s3_asset = S3Asset(
+            asset_id="id",
+            updated_source_path="updated_source_path",
+        )
+        resource.assets.append(s3_asset)
+
+        _write_stack(stack, "build_dir")
+        # undo_normalize_mock.assert_called_once_with(resource)
+        self.assertEqual(resource["Metadata"]["aws:asset:path"], "updated_source_path")
+        move_template_mock.assert_called_once_with(
+            "src_template_path", "stack_build_location", stack, output_format=TemplateFormat.JSON
+        )
+
+    @patch("os.path.join", side_effect=["src_template_path", "stack_build_location", "build_dir/nested_stack"])
+    @patch("samcli.lib.iac.cfn.cfn_iac.move_template")
+    def test_write_stack_image_asset(self, move_template_mock, undo_normalize_mock):
+        stack = Stack(stack_id="test_stack")
+        stack["Resources"] = DictSection("Resources")
+        stack.extra_details["template_file"] = "template_file"
+        resource = Resource(
+            "Function1",
+            body={
+                "Type": "AWS::Lambda::Function",
+                "Properties": {},
+                "Metadata": {
+                    "aws:cdk:path": "stack/resouce",
+                    "aws:asset:path": "source_asset",
+                    "aws:asset:property": "Code",
+                },
+            },
+        )
+        stack["Resources"]["Function1"] = resource
+        image_asset = ImageAsset(
+            asset_id="id",
+            source_local_image="image:tag",
+        )
+        resource.assets.append(image_asset)
+
+        _write_stack(stack, "build_dir")
+        undo_normalize_mock.assert_called_once_with(resource)
+        self.assertIn("aws:asset:local_image", resource["Metadata"])
+        self.assertEqual(resource["Metadata"]["aws:asset:local_image"], "image:tag")
+        move_template_mock.assert_called_once_with(
+            "src_template_path", "stack_build_location", stack, output_format=TemplateFormat.JSON
+        )
+
+    @patch("os.path.join", side_effect=["src_template_path", "stack_build_location", "build_dir/nested_stack"])
+    @patch("samcli.lib.iac.cfn.cfn_iac.move_template")
+    @patch("samcli.lib.iac.cfn.cfn_iac._write_stack")
+    def test_write_stack_s3_asset_nested_stack(
+        self, write_stack_mock, move_template_mock, undo_normalize_mock
+    ):
+        stack = Stack(stack_id="test_stack")
+        stack["Resources"] = DictSection("Resources")
+        stack.extra_details["template_file"] = "template_file"
+        resource = Resource(
+            "NestedStack",
+            body={
+                "Type": "AWS::Lambda::Function",
+                "Properties": {},
+                "Metadata": {
+                    "aws:cdk:path": "stack/resouce",
+                    "aws:asset:path": "source_asset",
+                    "aws:asset:property": "TemplateURL",
+                },
+            },
+        )
+        stack["Resources"]["Function1"] = resource
+        s3_asset = S3Asset(
+            asset_id="id",
+            updated_source_path="updated_source_path",
+            source_property="TemplateURL",
+        )
+        resource.assets.append(s3_asset)
+        resource.nested_stack = Stack(
+            sections={"Resources": {}}, extra_details={"template_file": "hello.nested-stack.json"}
+        )
+
+        self.original_func(stack, "build_dir")
+        undo_normalize_mock.assert_called_once_with(resource)
+        self.assertEqual(resource["Metadata"]["aws:asset:path"], "build_dir/nested_stack")
+        self.assertEqual(s3_asset.updated_source_path, "build_dir/nested_stack")
+        write_stack_mock.assert_called_once_with(resource.nested_stack, "cloud_assembly_dir", "build_dir")
+        move_template_mock.assert_called_once_with(
+            "src_template_path", "stack_build_location", stack, output_format=TemplateFormat.JSON
+        )

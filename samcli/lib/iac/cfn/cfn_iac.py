@@ -39,7 +39,7 @@ from samcli.lib.providers.sam_stack_provider import SamLocalStackProvider, is_lo
 LOG = logging.getLogger(__name__)
 
 PARENT_STACK_TEMPLATE_PATH_KEY = "parent_stack_template_path"
-TEMPLATE_PATH_KEY = "template_path"
+TEMPLATE_PATH_KEY = "template_file"
 TEMPLATE_BUILD_PATH_KEY = "template_build_path"
 
 BASE_DIR_RESOURCES = [
