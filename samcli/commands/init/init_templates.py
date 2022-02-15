@@ -20,7 +20,7 @@ from samcli.local.common.runtime_template import (
 )
 
 LOG = logging.getLogger(__name__)
-APP_TEMPLATES_REPO_URL = "https://github.com/aws/aws-sam-cli-app-templates"
+APP_TEMPLATES_REPO_URL = "https://github.com/roman-boiko/aws-sam-cli-app-templates"
 APP_TEMPLATES_REPO_NAME = "aws-sam-cli-app-templates"
 
 

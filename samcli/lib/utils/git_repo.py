@@ -123,7 +123,7 @@ class GitRepo:
                 git_executable: str = GitRepo._git_executable()
                 LOG.info("\nCloning from %s", self.url)
                 check_output(
-                    [git_executable, "clone", self.url, clone_name],
+                    [git_executable, "clone", "-b", "node-ts-hello-world-template", self.url, clone_name],
                     cwd=tempdir,
                     stderr=subprocess.STDOUT,
                 )
