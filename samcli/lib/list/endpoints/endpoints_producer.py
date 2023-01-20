@@ -12,6 +12,7 @@ from samcli.commands.list.exceptions import (
     SamListLocalResourcesNotFoundError,
     SamListUnknownClientError,
 )
+from samcli.lib.list.endpoints.endpoints_filter import EndpointsFilter
 from samcli.lib.list.list_interfaces import Producer
 from samcli.lib.providers.sam_stack_provider import SamLocalStackProvider
 from samcli.lib.providers.provider import Stack
@@ -55,6 +56,7 @@ class EndpointsProducer(ResourceMappingProducer, Producer):
         apigatewayv2_client,
         mapper,
         consumer,
+        filter_string,
     ):
         """
         Parameters
@@ -83,12 +85,20 @@ class EndpointsProducer(ResourceMappingProducer, Producer):
             The consumer used to output the data
         """
         super().__init__(
-            stack_name, region, profile, template_file, cloudformation_client, iam_client, mapper, consumer
+            stack_name,
+            region,
+            profile,
+            template_file,
+            cloudformation_client,
+            iam_client,
+            mapper,
+            consumer,
         )
         self.stack_name = stack_name
         self.region = region
         self.profile = profile
         self.template_file = template_file
+        self.filter_string = filter_string
         self.cloudformation_client = cloudformation_client
         self.iam_client = iam_client
         self.cloudcontrol_client = cloudcontrol_client
@@ -294,12 +304,13 @@ class EndpointsProducer(ResourceMappingProducer, Producer):
         validate_stack(stacks)
 
         endpoints_list: list
+        data_filter = EndpointsFilter()
 
         if self.stack_name:
             endpoints_list = self.get_cloud_endpoints(stacks)
         else:
             endpoints_list = get_local_endpoints(stacks)
-        mapped_output = self.mapper.map(endpoints_list)
+        mapped_output = self.mapper.map(endpoints_list, data_filter, self.filter_string)
         self.consumer.consume(mapped_output)
 
 

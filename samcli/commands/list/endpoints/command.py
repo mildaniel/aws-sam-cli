@@ -23,6 +23,7 @@ are lambda functions and API Gateway API resources.
 
 @click.command(name="endpoints", help=HELP_TEXT)
 @configuration_option(provider=TomlProvider(section="parameters"))
+@click.option("--filter", default=None, help="Filter the list results.")
 @stack_name_option
 @output_option
 @template_option_without_build
@@ -33,20 +34,32 @@ are lambda functions and API Gateway API resources.
 @check_newer_version
 @print_cmdline_args
 @command_exception_handler
-def cli(self, stack_name, output, template_file, config_file, config_env):
+def cli(self, filter, stack_name, output, template_file, config_file, config_env):
     """
     `sam list endpoints` command entry point
     """
-    do_cli(stack_name=stack_name, output=output, region=self.region, profile=self.profile, template_file=template_file)
+    do_cli(
+        stack_name=stack_name,
+        output=output,
+        region=self.region,
+        profile=self.profile,
+        template_file=template_file,
+        filter_string=filter,
+    )
 
 
-def do_cli(stack_name, output, region, profile, template_file):
+def do_cli(stack_name, output, region, profile, template_file, filter_string):
     """
     Implementation of the ``cli`` method
     """
     from samcli.commands.list.endpoints.endpoints_context import EndpointsContext
 
     with EndpointsContext(
-        stack_name=stack_name, output=output, region=region, profile=profile, template_file=template_file
+        stack_name=stack_name,
+        output=output,
+        region=region,
+        profile=profile,
+        template_file=template_file,
+        filter_string=filter_string,
     ) as endpoints_context:
         endpoints_context.run()

@@ -18,7 +18,13 @@ class EndpointsContext(ListContext):
     """
 
     def __init__(
-        self, stack_name: str, output: str, region: Optional[str], profile: Optional[str], template_file: Optional[str]
+        self,
+        stack_name: str,
+        output: str,
+        region: Optional[str],
+        profile: Optional[str],
+        template_file: Optional[str],
+        filter_string: Optional[str],
     ):
         """
         Parameters
@@ -44,6 +50,7 @@ class EndpointsContext(ListContext):
         self.cloudcontrol_client = None
         self.apigateway_client = None
         self.apigatewayv2_client = None
+        self.filter_string = filter_string
 
     def __enter__(self):
         self.init_clients()
@@ -80,5 +87,6 @@ class EndpointsContext(ListContext):
             apigatewayv2_client=self.apigatewayv2_client,
             mapper=container.mapper,
             consumer=container.consumer,
+            filter_string=self.filter_string,
         )
         endpoints_producer.produce()

@@ -2,11 +2,22 @@
 Interface for MapperConsumerFactory, Producer, Mapper, ListInfoPullerConsumer
 """
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, Optional, Dict, Any
 from enum import Enum
 
 InputType = TypeVar("InputType")
 OutputType = TypeVar("OutputType")
+
+
+class DataFilter(ABC):
+    @abstractmethod
+    def filter_data(self, data: Dict[Any, Any], filter_string: str) -> Dict[Any, Any]:
+        """
+
+        :param data:
+        :param filter_string:
+        :return:
+        """
 
 
 class ListInfoPullerConsumer(ABC, Generic[InputType]):
@@ -30,12 +41,17 @@ class Mapper(ABC, Generic[InputType, OutputType]):
     """
 
     @abstractmethod
-    def map(self, data: InputType) -> OutputType:
+    def map(self, data: InputType, data_filter: Optional[DataFilter], filter_string: Optional[str]) -> OutputType:
         """
         Parameters
         ----------
         data: TypeVar
             Data for the mapper to map
+
+        data_filter: Optional[DataFilter]
+
+        filter_string: Optional[str]
+            Filter the JSON output with a given filter string
 
         Returns
         -------
