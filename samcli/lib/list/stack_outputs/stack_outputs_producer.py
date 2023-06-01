@@ -21,13 +21,14 @@ LOG = logging.getLogger(__name__)
 
 
 class StackOutputsProducer(Producer):
-    def __init__(self, stack_name, output, region, cloudformation_client, mapper, consumer):
+    def __init__(self, stack_name, output, region, cloudformation_client, mapper, consumer, query):
         self.stack_name = stack_name
         self.output = output
         self.region = region
         self.cloudformation_client = cloudformation_client
         self.mapper = mapper
         self.consumer = consumer
+        self.query = query
 
     def get_stack_info(self) -> Optional[Any]:
         """
@@ -66,5 +67,5 @@ class StackOutputsProducer(Producer):
                 Description=stack_output.get("Description", ""),
             )
             output_list.append(dataclasses.asdict(stack_output_data))
-        mapped_output = self.mapper.map(output_list)
+        mapped_output = self.mapper.map(output_list, self.query)
         self.consumer.consume(data=mapped_output)

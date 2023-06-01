@@ -13,12 +13,15 @@ LOG = logging.getLogger(__name__)
 
 
 class StackOutputsContext(ListContext):
-    def __init__(self, stack_name: str, output: str, region: Optional[str], profile: Optional[str]):
+    def __init__(
+        self, stack_name: str, output: str, region: Optional[str], profile: Optional[str], query: Optional[str]
+    ):
         super().__init__()
         self.stack_name = stack_name
         self.output = output
         self.region = region
         self.profile = profile
+        self.query = query
         self.cloudformation_client = None
 
     def __enter__(self):
@@ -39,6 +42,7 @@ class StackOutputsContext(ListContext):
             stack_name=self.stack_name,
             output=self.output,
             region=self.region,
+            query=self.query,
             cloudformation_client=self.cloudformation_client,
             mapper=container.mapper,
             consumer=container.consumer,

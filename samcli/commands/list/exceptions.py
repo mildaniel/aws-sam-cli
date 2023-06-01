@@ -55,3 +55,9 @@ class StackDoesNotExistInRegionError(UserException):
         message_fmt = f"The input stack {stack_name} does" f" not exist on Cloudformation in the region {region}"
 
         super().__init__(message=message_fmt.format(stack_name=self.stack_name, region=self.region))
+
+
+class ListQueryError(SamListError):
+    """
+    Unable to process the query results
+    """

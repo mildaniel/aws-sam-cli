@@ -3,7 +3,7 @@ Interface for MapperConsumerFactory, Producer, Mapper, ListInfoPullerConsumer
 """
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 
 InputType = TypeVar("InputType")
 OutputType = TypeVar("OutputType")
@@ -30,12 +30,14 @@ class Mapper(ABC, Generic[InputType, OutputType]):
     """
 
     @abstractmethod
-    def map(self, data: InputType) -> OutputType:
+    def map(self, data: InputType, query: Optional[str]) -> OutputType:
         """
         Parameters
         ----------
         data: TypeVar
             Data for the mapper to map
+        query: str
+            JSON query string for extracting relevant data from the JSON object
 
         Returns
         -------

@@ -2,7 +2,7 @@
 Implementation of the endpoints to table mapper
 """
 from collections import OrderedDict
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from samcli.lib.list.list_interfaces import Mapper
 
@@ -17,7 +17,7 @@ class EndpointsToTableMapper(Mapper):
     Mapper class for mapping endpoints data for table output
     """
 
-    def map(self, data: list) -> Dict[Any, Any]:
+    def map(self, data: list, query: Optional[str] = None) -> Dict[Any, Any]:
         """
         Maps data to the format needed for consumption by the table consumer
 
@@ -25,6 +25,8 @@ class EndpointsToTableMapper(Mapper):
         ----------
         data: list
             List of dictionaries containing the entries of the endpoints data
+        query: Optional[str]
+            Query the resultant data to fetch specific information/fields
 
         Returns
         -------
