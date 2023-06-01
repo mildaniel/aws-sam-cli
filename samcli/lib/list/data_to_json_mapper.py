@@ -41,7 +41,7 @@ class DictResponseFilter(ResponseFilter):
 
 class ListResponseFilter(ResponseFilter):
     def filter_response(self, value: list) -> str:
-        if len(value) == 1 and (isinstance(value[0], str) or isinstance(value[0], int)):
+        if len(value) == 1 and (isinstance(value[0], (str, int))):
             return str(value[0])
         return json.dumps(value)
 
