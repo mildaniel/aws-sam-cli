@@ -82,8 +82,9 @@ class CfnParameterOverridesType(click.ParamType):
         key=PARAM_AND_METADATA_KEY_REGEX, value=VALUE_REGEX_SPACE_DELIM
     )
     _pattern_2 = r"(?:(?: ){key}={value})".format(key=PARAM_AND_METADATA_KEY_REGEX, value=VALUE_REGEX_SPACE_DELIM)
+    _pattern_3 = r"(?:file://+)"
 
-    ordered_pattern_match = [_pattern_1, _pattern_2]
+    ordered_pattern_match = [_pattern_1, _pattern_2, _pattern_3]
 
     # NOTE(TheSriram): name needs to be added to click.ParamType requires it.
     name = ""
@@ -119,13 +120,29 @@ class CfnParameterOverridesType(click.ParamType):
                     ctx,
                 )
 
-            groups = re.findall(pattern, normalized_val)
+            if self._is_file(normalized_val):
+                return self._read_parameters_from_file(normalized_val)
 
+            groups = re.findall(pattern, normalized_val)
             # 'groups' variable is a list of tuples ex: [(key1, value1), (key2, value2)]
             for key, param_value in groups:
                 result[_unquote_wrapped_quotes(key)] = _unquote_wrapped_quotes(param_value)
 
         return result
+
+    @staticmethod
+    def _read_parameters_from_file(value):
+        result = {}
+        filename = value[len("file://") + 1:]
+        with open(filename, "r") as f:
+            json_overrides = json.load(f)
+        for override in json_overrides:
+            result[override["ParameterKey"]] = override["ParameterValue"]
+        return result
+
+    @staticmethod
+    def _is_file(value: str):
+        return value.strip().startswith("file://")
 
 
 class CfnMetadataType(click.ParamType):
