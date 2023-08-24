@@ -55,7 +55,10 @@ resource "aws_apigatewayv2_deployment" "http_api" {
   api_id      = aws_apigatewayv2_api.http_api.id
   depends_on  = [
     aws_apigatewayv2_integration.unauthenticated_function_resource_integration,
-    aws_apigatewayv2_route.unauthenticated_function_route
+    aws_apigatewayv2_integration.auth_integration,
+    aws_apigatewayv2_route.unauthenticated_function_route,
+    aws_apigatewayv2_route.header_root_function_resource_get_route,
+    aws_apigatewayv2_route.request_function_route,
   ]
 }
 

@@ -173,7 +173,14 @@ resource "aws_apigatewayv2_api" "root_http_api" {
 
 resource "aws_apigatewayv2_deployment" "root_http_api" {
   api_id      = aws_apigatewayv2_api.root_http_api.id
-  depends_on = [aws_apigatewayv2_integration.unauthenticated, aws_apigatewayv2_route.unauthenticated]
+  depends_on = [
+    aws_apigatewayv2_integration.unauthenticated,
+    aws_apigatewayv2_integration.auth_root_integration,
+    aws_apigatewayv2_integration.function2,
+    aws_apigatewayv2_integration.module_authorizer_integration,
+    aws_apigatewayv2_integration.serverless_function_resource_auth_integration,
+    aws_apigatewayv2_integration.serverless_function_resource_integration,
+  ]
 }
 
 resource "aws_apigatewayv2_stage" "root_http_api" {
@@ -244,6 +251,48 @@ resource "aws_apigatewayv2_authorizer" "root_request_authorizer" {
   identity_sources = ["$request.header.myheader", "$request.querystring.mystring"]
   name             = "request_authorizer"
 }
+
+resource "aws_apigatewayv2_route" "header_root_function_resource_get_route_simple" {
+  api_id         = aws_apigatewayv2_api.root_http_api.id
+  target         = "integrations/${aws_apigatewayv2_integration.auth_root_integration.id}"
+  route_key      = "GET /header_root_function/simple"
+  operation_name = "my_operation"
+  authorization_type = "CUSTOM"
+  authorizer_id = aws_apigatewayv2_authorizer.root_header_authorizer_simple.id
+  depends_on = [aws_apigatewayv2_integration.unauthenticated]
+}
+
+resource "aws_apigatewayv2_authorizer" "root_header_authorizer_simple" {
+  api_id           = aws_apigatewayv2_api.root_http_api.id
+  authorizer_type  = "REQUEST"
+  authorizer_uri   = aws_lambda_function.authorizer1.invoke_arn
+  authorizer_credentials_arn = aws_iam_role.invocation_role.arn
+  authorizer_payload_format_version = "2.0"
+  identity_sources = ["$request.header.myheader"]
+  name             = "header_authorizer_simple"
+  enable_simple_responses = true
+}
+
+resource "aws_apigatewayv2_route" "get_hello_request_simple" {
+  api_id         = aws_apigatewayv2_api.root_http_api.id
+  target         = "integrations/${aws_apigatewayv2_integration.auth_root_integration.id}"
+  route_key      = "GET /request_root_function/simple"
+  operation_name = "header_root_function_simple"
+  authorization_type = "CUSTOM"
+  authorizer_id = aws_apigatewayv2_authorizer.root_request_authorizer_simple.id
+}
+
+resource "aws_apigatewayv2_authorizer" "root_request_authorizer_simple" {
+  api_id           = aws_apigatewayv2_api.root_http_api.id
+  authorizer_type  = "REQUEST"
+  authorizer_uri   = aws_lambda_function.authorizer1.invoke_arn
+  authorizer_credentials_arn = aws_iam_role.invocation_role.arn
+  authorizer_payload_format_version = "2.0"
+  identity_sources = ["$request.header.myheader", "$request.querystring.mystring"]
+  name             = "request_authorizer_simple"
+  enable_simple_responses = true
+}
+
 
 resource "aws_apigatewayv2_route" "unauthenticated_module_function" {
   api_id         = aws_apigatewayv2_api.root_http_api.id
@@ -374,20 +423,3 @@ module "module_rest_api" {
   autherizer_function = module.authorizer7.lambda_function_invoke_arn
   rest_api_name = "module_http_api"
 }
-
-#
-#resource "aws_api_gateway_deployment" "root_rest_api_deployment" {
-#  rest_api_id = aws_api_gateway_rest_api.root_rest_api.id
-#
-#  depends_on = [
-#    aws_api_gateway_integration.header_root_function_resource_integration,
-#    aws_api_gateway_integration.header_serverless_function_resource_integration,
-#    aws_api_gateway_integration.module_function_resource_integration,
-#    aws_api_gateway_integration.request_module_function_resource_integration,
-#    aws_api_gateway_integration.request_root_function_resource_integration,
-#    aws_api_gateway_integration.request_serverless_function_resource_integration,
-#    aws_api_gateway_integration.root_function_resource_integration,
-#    aws_api_gateway_integration.serverless_function_resource_integration,
-#  ]
-#}
-
