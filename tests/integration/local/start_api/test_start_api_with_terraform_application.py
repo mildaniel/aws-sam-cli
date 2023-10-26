@@ -24,6 +24,7 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
 
     @classmethod
     def setUpClass(cls):
+        cls.move_test_files_into_scratch_dir()
         command = get_sam_command()
         cls.template_path = ""
         cls.build_before_invoke = False
