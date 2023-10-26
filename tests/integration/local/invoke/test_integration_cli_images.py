@@ -35,7 +35,7 @@ class TestSamPython36HelloWorldIntegrationImages(InvokeIntegBase):
         cls.client = docker.from_env()
         cls.image_name = "sam-test-lambdaimage"
         cls.docker_tag = f"{cls.image_name}:v1"
-        cls.test_data_invoke_path = str(Path(__file__).resolve().parents[2].joinpath("testdata", "invoke"))
+        cls.test_data_invoke_path = str(Path(cls.integration_dir).joinpath("testdata", "invoke"))
         # Directly build an image that will be used across all local invokes in this class.
         for log in cls.client.api.build(
             path=cls.test_data_invoke_path, dockerfile="Dockerfile", tag=cls.docker_tag, decode=True
@@ -44,6 +44,7 @@ class TestSamPython36HelloWorldIntegrationImages(InvokeIntegBase):
 
     @classmethod
     def tearDownClass(cls):
+        super().tearDownClass()
         try:
             cls.client.api.remove_image(cls.docker_tag)
             cls.client.api.remove_image(f"{cls.image_name}:{RAPID_IMAGE_TAG_PREFIX}-{X86_64}")
@@ -430,7 +431,7 @@ class TestDeleteOldRapidImages(InvokeIntegBase):
         cls.client = docker.from_env()
         cls.repo = "sam-test-lambdaimage"
         cls.tag = f"{cls.repo}:v1"
-        cls.test_data_invoke_path = str(Path(__file__).resolve().parents[2].joinpath("testdata", "invoke"))
+        cls.test_data_invoke_path = str(Path(cls.integration_dir).joinpath("testdata", "invoke"))
         # Directly build an image that will be used across all local invokes in this class.
         for log in cls.client.api.build(
             path=cls.test_data_invoke_path, dockerfile="Dockerfile", tag=cls.tag, decode=True, nocache=True
@@ -441,6 +442,7 @@ class TestDeleteOldRapidImages(InvokeIntegBase):
 
     @classmethod
     def tearDownClass(cls):
+        super().tearDownClass()
         try:
             cls.client.api.remove_image(cls.tag)
         except APIError:

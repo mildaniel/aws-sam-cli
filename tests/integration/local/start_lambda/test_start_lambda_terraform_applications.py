@@ -11,8 +11,6 @@ from unittest import skipIf
 import logging
 
 import boto3
-from botocore import UNSIGNED
-from botocore.config import Config
 import docker
 import pytest
 from docker.errors import APIError
@@ -21,7 +19,7 @@ from parameterized import parameterized, parameterized_class
 from tests.integration.local.common_utils import random_port
 from tests.integration.local.invoke.layer_utils import LayerUtils
 from tests.integration.local.start_lambda.start_lambda_api_integ_base import StartLambdaIntegBaseClass
-from tests.testing_utils import CI_OVERRIDE, IS_WINDOWS, RUNNING_ON_CI, RUN_BY_CANARY
+from tests.testing_utils import CI_OVERRIDE, IS_WINDOWS, RUNNING_ON_CI, RUN_BY_CANARY, kill_process
 
 LOG = logging.getLogger(__name__)
 S3_SLEEP = 3
@@ -36,6 +34,7 @@ class StartLambdaTerraformApplicationIntegBase(StartLambdaIntegBaseClass):
     def setUpClass(cls):
         # This is the directory for tests/integration which will be used to file the testdata
         # files for integ tests
+        cls.move_test_files_into_scratch_dir()
         if cls.template_path:
             cls.template = cls.integration_dir + cls.template_path
 
@@ -46,15 +45,6 @@ class StartLambdaTerraformApplicationIntegBase(StartLambdaIntegBaseClass):
 
         if cls.build_before_invoke:
             cls.build()
-
-        # remove all containers if there
-        cls.docker_client = docker.from_env()
-        for container in cls.docker_client.api.containers():
-            try:
-                cls.docker_client.api.remove_container(container, force=True)
-            except APIError as ex:
-                LOG.error("Failed to remove container %s", container, exc_info=ex)
-
         cls.start_lambda_with_retry(input=cls.input, env=cls.env)
 
     @classmethod
@@ -64,7 +54,7 @@ class StartLambdaTerraformApplicationIntegBase(StartLambdaIntegBaseClass):
             (stdout, stderr) = process.communicate(timeout=300)
             return stdout, stderr, process.returncode
         except TimeoutExpired:
-            process.kill()
+            kill_process(process)
             raise
 
 
@@ -72,17 +62,6 @@ class TestLocalStartLambdaTerraformApplicationWithoutBuild(StartLambdaTerraformA
     terraform_application = "/testdata/invoke/terraform/simple_application_no_building_logic"
     template_path = None
     hook_name = "terraform"
-
-    def setUp(self):
-        self.url = "http://127.0.0.1:{}".format(self.port)
-        self.lambda_client = boto3.client(
-            "lambda",
-            endpoint_url=self.url,
-            region_name="us-east-1",
-            use_ssl=False,
-            verify=False,
-            config=Config(signature_version=UNSIGNED, read_timeout=120, retries={"max_attempts": 0}),
-        )
 
     functions = [
         "s3_lambda_function",
@@ -116,17 +95,6 @@ class TestLocalStartLambdaTerraformApplicationWithoutBuildCustomPlanFile(StartLa
     template_path = None
     hook_name = "terraform"
     terraform_plan_file = "custom-plan.json"
-
-    def setUp(self):
-        self.url = "http://127.0.0.1:{}".format(self.port)
-        self.lambda_client = boto3.client(
-            "lambda",
-            endpoint_url=self.url,
-            region_name="us-east-1",
-            use_ssl=False,
-            verify=False,
-            config=Config(signature_version=UNSIGNED, read_timeout=120, retries={"max_attempts": 0}),
-        )
 
     functions = [
         "s3_lambda_function",
@@ -174,6 +142,7 @@ class TestLocalStartLambdaTerraformApplicationWithLayersWithoutBuild(StartLambda
 
     @classmethod
     def setUpClass(cls):
+        cls.move_test_files_into_scratch_dir()
         cls.region_name = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
 
         # create some Lambda Layers to be used in the Terraform project
@@ -275,18 +244,7 @@ class TestLocalStartLambdaTerraformApplicationWithLayersWithoutBuild(StartLambda
         time.sleep(S3_SLEEP)
         cls.s3_bucket.delete()
 
-        super(TestLocalStartLambdaTerraformApplicationWithLayersWithoutBuild, cls).tearDownClass()
-
-    def setUp(self):
-        self.url = "http://127.0.0.1:{}".format(self.port)
-        self.lambda_client = boto3.client(
-            "lambda",
-            endpoint_url=self.url,
-            region_name="us-east-1",
-            use_ssl=False,
-            verify=False,
-            config=Config(signature_version=UNSIGNED, read_timeout=120, retries={"max_attempts": 0}),
-        )
+        super().tearDownClass()
 
     functions = [
         ("module.function44.aws_lambda_function.this", "hello world 44"),
@@ -325,8 +283,7 @@ class TestInvalidTerraformApplicationThatReferToS3BucketNotCreatedYet(StartLambd
 
     @classmethod
     def setUpClass(cls):
-        # over write the parent setup
-        pass
+        cls.move_test_files_into_scratch_dir()
 
     @classmethod
     def tearDownClass(cls):
@@ -337,15 +294,8 @@ class TestInvalidTerraformApplicationThatReferToS3BucketNotCreatedYet(StartLambd
         self.working_dir = self.integration_dir + self.terraform_application
         self.port = str(random_port())
 
-        # remove all containers if there
-        self.docker_client = docker.from_env()
-        for container in self.docker_client.api.containers():
-            try:
-                self.docker_client.api.remove_container(container, force=True)
-            except APIError as ex:
-                LOG.error("Failed to remove container %s", container, exc_info=ex)
-
     def tearDown(self):
+        super().tearDown()
         # delete the override file
         try:
             shutil.rmtree(str(Path(self.working_dir).joinpath(".aws-sam-iacs")))
@@ -376,7 +326,7 @@ class TestLocalStartLambdaInvalidUsecasesTerraform(StartLambdaTerraformApplicati
     def setUpClass(cls):
         # As we test the invalid scenarios in this class, so we do not expect that sam local lambda command will work
         # fine, and so we do not need to setup any port or any other setup.
-        pass
+        cls.move_test_files_into_scratch_dir()
 
     @classmethod
     def tearDownClass(cls):
@@ -428,19 +378,9 @@ class TestLocalStartLambdaTerraformApplicationWithLocalImageUri(StartLambdaTerra
         "aws_lambda_function.image_lambda",
     ]
 
-    def setUp(self):
-        self.url = "http://127.0.0.1:{}".format(self.port)
-        self.lambda_client = boto3.client(
-            "lambda",
-            endpoint_url=self.url,
-            region_name="us-east-1",
-            use_ssl=False,
-            verify=False,
-            config=Config(signature_version=UNSIGNED, read_timeout=120, retries={"max_attempts": 0}),
-        )
-
     @classmethod
     def setUpClass(cls):
+        cls.move_test_files_into_scratch_dir()
         if cls.template_path:
             cls.template = cls.integration_dir + cls.template_path
 
@@ -455,7 +395,7 @@ class TestLocalStartLambdaTerraformApplicationWithLocalImageUri(StartLambdaTerra
         cls.docker_client = docker.from_env()
         cls.image_name = "sam-test-lambdaimage"
         cls.docker_tag = f"{cls.image_name}:v1"
-        cls.test_data_invoke_path = str(Path(__file__).resolve().parents[2].joinpath("testdata", "invoke"))
+        cls.test_data_invoke_path = str(Path(cls.integration_dir).joinpath("testdata", "invoke"))
         # Directly build an image that will be used across all local invokes in this class.
         for log in cls.docker_client.api.build(
             path=cls.test_data_invoke_path, dockerfile="Dockerfile", tag=cls.docker_tag, decode=True
@@ -470,6 +410,7 @@ class TestLocalStartLambdaTerraformApplicationWithLocalImageUri(StartLambdaTerra
             cls.docker_client.api.remove_image(cls.docker_tag)
         except APIError:
             pass
+        super().tearDownClass()
 
     @parameterized.expand(functions)
     @pytest.mark.flaky(reruns=3)
