@@ -97,8 +97,8 @@ class TerraformStartApiIntegrationApplyBase(TerraformStartApiIntegrationBase):
             pass
 
         try:
-            os.remove(str(Path(cls.project_directory / "terraform.tfstate")))  # type: ignore
-            os.remove(str(Path(cls.project_directory / "terraform.tfstate.backup")))  # type: ignore
+            os.remove(str(Path(cls.project_directory) / "terraform.tfstate"))  # type: ignore
+            os.remove(str(Path(cls.project_directory) / "terraform.tfstate.backup"))  # type: ignore
         except (FileNotFoundError, PermissionError):
             pass
 
