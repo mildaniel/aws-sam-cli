@@ -40,7 +40,7 @@ resource "aws_s3_object" "s3_lambda_code" {
 
 resource "aws_lambda_layer_version" "MyAwesomeLayer" {
   filename            = "HelloWorldFunction.zip"
-  layer_name          = "MyAwesomeLayer"
+  layer_name          = "MyAwesomeLayer-${random_uuid.unique_id.result}"
   compatible_runtimes = ["python3.8"]
 }
 
@@ -68,7 +68,7 @@ resource "aws_lambda_function" "HelloWorldFunction2" {
 }
 
 resource "aws_api_gateway_rest_api" "MyDemoAPI" {
-  name               = "MyDemoAPI"
+  name               = "MyDemoAPI-${random_uuid.unique_id.result}"
   binary_media_types = [ "utf-8" ]
 }
 

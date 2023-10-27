@@ -7,7 +7,7 @@ resource "random_uuid" "unique_id" {
 }
 
 resource "aws_api_gateway_authorizer" "header_authorizer" {
-  name = "header_authorizer"
+  name = "header_authorizer-${random_uuid.unique_id.result}"
   rest_api_id = aws_api_gateway_rest_api.api.id
   authorizer_uri = aws_lambda_function.authorizer.invoke_arn
   authorizer_credentials = aws_iam_role.invocation_role.arn
@@ -16,7 +16,7 @@ resource "aws_api_gateway_authorizer" "header_authorizer" {
 }
 
 resource "aws_api_gateway_authorizer" "request_authorizer" {
-  name = "request_authorizer"
+  name = "request_authorizer-${random_uuid.unique_id.result}"
   rest_api_id = aws_api_gateway_rest_api.api.id
   authorizer_uri = aws_lambda_function.authorizer.invoke_arn
   authorizer_credentials = aws_iam_role.invocation_role.arn
