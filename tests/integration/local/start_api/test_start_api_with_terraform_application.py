@@ -25,7 +25,6 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
 
     @classmethod
     def setUpClass(cls):
-        cls.move_test_files_into_scratch_dir()
         command = get_sam_command()
         cls.template_path = ""
         cls.build_before_invoke = False
@@ -44,8 +43,8 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
         )
         shutil.rmtree(scratch_dir, ignore_errors=True)
         os.makedirs(scratch_dir)
-        shutil.copytree(str(Path(cls.project_directory).joinpath("testdata")), str(scratch_dir))
-        cls.project_directory = str(scratch_dir.parent)
+        shutil.copytree(str(Path(cls.project_directory)), str(scratch_dir), dirs_exist_ok=True)
+        cls.project_directory = str(scratch_dir)
 
     @staticmethod
     def get_integ_dir():
@@ -58,10 +57,10 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
 
     @classmethod
     def _remove_generated_directories(cls):
-        shutil.rmtree(str(Path(cls.project_directory / ".aws-sam-iacs")), ignore_errors=True)
-        shutil.rmtree(str(Path(cls.project_directory / ".terraform")), ignore_errors=True)
+        shutil.rmtree(str(Path(cls.project_directory) / ".aws-sam-iacs"), ignore_errors=True)
+        shutil.rmtree(str(Path(cls.project_directory) / ".terraform"), ignore_errors=True)
         try:
-            os.remove(str(Path(cls.project_directory / ".terraform.lock.hcl")))
+            os.remove(str(Path(cls.project_directory) / ".terraform.lock.hcl"))
         except (FileNotFoundError, PermissionError):
             pass
 
@@ -143,10 +142,10 @@ class TestStartApiTerraformApplication(TerraformStartApiIntegrationBase):
             self.assertEqual(response.json(), {"message": "hello world"})
 
 
-@skipIf(
-    not CI_OVERRIDE,
-    "Skip Terraform test cases unless running in CI",
-)
+# @skipIf(
+#     not CI_OVERRIDE,
+#     "Skip Terraform test cases unless running in CI",
+# )
 @pytest.mark.flaky(reruns=3)
 class TestStartApiTerraformApplicationCustomPlanFile(TerraformStartApiIntegrationBase):
     terraform_application = "terraform-v1-api-simple"
