@@ -68,7 +68,7 @@ resource "aws_lambda_function" "HelloWorldFunction2" {
 }
 
 resource "aws_api_gateway_rest_api" "MyDemoAPI" {
-  name               = "MyDemoAPI-${random_uuid.unique_id.result}"
+  name               = "MyDemoAPI"
   binary_media_types = [ "utf-8" ]
 }
 
