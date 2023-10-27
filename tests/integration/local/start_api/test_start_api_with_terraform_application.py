@@ -1,6 +1,7 @@
 import logging
 import shutil
 import os
+import uuid
 from pathlib import Path
 from subprocess import CalledProcessError, CompletedProcess, run
 from typing import Optional
@@ -33,7 +34,18 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
             cls.command_list += ["--terraform-plan-file", cls.terraform_plan_file]
         cls.test_data_path = Path(cls.get_integ_dir()) / "testdata" / "start_api"
         cls.project_directory = cls.test_data_path / "terraform" / cls.terraform_application
+        cls.move_test_files_into_scratch_dir()
         super(TerraformStartApiIntegrationBase, cls).setUpClass()
+
+    @classmethod
+    def move_test_files_into_scratch_dir(cls):
+        scratch_dir = Path(__file__).resolve().parent.joinpath(
+            ".tmp", str(uuid.uuid4()).replace("-", "")[:10], "testdata"
+        )
+        shutil.rmtree(scratch_dir, ignore_errors=True)
+        os.makedirs(scratch_dir)
+        shutil.copytree(str(Path(cls.project_directory).joinpath("testdata")), str(scratch_dir))
+        cls.project_directory = str(scratch_dir.parent)
 
     @staticmethod
     def get_integ_dir():
