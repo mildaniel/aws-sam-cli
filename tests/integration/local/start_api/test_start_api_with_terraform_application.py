@@ -22,6 +22,7 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
     run_command_timeout = 300
     terraform_application: Optional[str] = None
     terraform_plan_file: Optional[str] = None
+    moved_to_scatch_dir = False
 
     @classmethod
     def setUpClass(cls):
@@ -31,13 +32,16 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
         cls.command_list = [command, "local", "start-api", "--hook-name", "terraform"]
         if cls.terraform_plan_file:
             cls.command_list += ["--terraform-plan-file", cls.terraform_plan_file]
-        cls.test_data_path = Path(cls.get_integ_dir()) / "testdata" / "start_api"
-        cls.project_directory = cls.test_data_path / "terraform" / cls.terraform_application
         cls.move_test_files_into_scratch_dir()
         super(TerraformStartApiIntegrationBase, cls).setUpClass()
 
     @classmethod
     def move_test_files_into_scratch_dir(cls):
+        if cls.moved_to_scatch_dir:
+            return
+        cls.test_data_path = Path(cls.get_integ_dir()) / "testdata" / "start_api"
+        cls.project_directory = cls.test_data_path / "terraform" / cls.terraform_application
+        cls.moved_to_scatch_dir = True
         scratch_dir = Path(__file__).resolve().parent.joinpath(
             ".tmp", str(uuid.uuid4()).replace("-", "")[:10], "testdata"
         )
@@ -78,6 +82,8 @@ class TerraformStartApiIntegrationApplyBase(TerraformStartApiIntegrationBase):
     @classmethod
     def setUpClass(cls):
         # init terraform project to populate deploy-only values
+        cls.move_test_files_into_scratch_dir()
+
         cls._run_command(["terraform", "init", "-input=false"], check=True)
         cls._run_command(["terraform", "apply", "-auto-approve", "-input=false"], check=True)
 
