@@ -34,7 +34,6 @@ def wait_for_local_process(process, port, collect_output=False) -> str:
             raise InvalidAddressException()
         if "Press CTRL+C to quit" in line_as_str or "Error: " in line_as_str:
             break
-        time.sleep(1)
 
     return output
 
