@@ -70,10 +70,9 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
 
     @classmethod
     def _run_command(cls, command, check) -> CompletedProcess:
-        test_data_folder = (
-            Path(cls.get_integ_dir()) / "testdata" / "start_api" / "terraform" / cls.terraform_application  # type: ignore
+        return run(
+            command, cwd=cls.project_directory, check=check, capture_output=True, timeout=cls.run_command_timeout
         )
-        return run(command, cwd=test_data_folder, check=check, capture_output=True, timeout=cls.run_command_timeout)
 
 
 class TerraformStartApiIntegrationApplyBase(TerraformStartApiIntegrationBase):
