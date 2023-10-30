@@ -70,9 +70,12 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
 
     @classmethod
     def _run_command(cls, command, check) -> CompletedProcess:
-        return run(
+        command_result = run(
             command, cwd=cls.project_directory, check=check, capture_output=True, timeout=cls.run_command_timeout
         )
+        LOG.info(command_result.stdout.decode("utf-8"))
+        LOG.info(command_result.stderr.decode("utf-8"))
+        return command_result
 
 
 class TerraformStartApiIntegrationApplyBase(TerraformStartApiIntegrationBase):
