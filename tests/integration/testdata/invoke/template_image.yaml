@@ -22,12 +22,16 @@ Parameters:
     Type: String
     Default: "MyReallyCoolFunction"
 
+  TestImageUri:
+    Type: String
+    Default: "sam-test-lambdaimage:v1"
+
 Resources:
   HelloWorldServerlessFunction:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.handler
@@ -37,7 +41,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.handler
@@ -47,7 +51,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.sleep_handler
@@ -57,7 +61,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.sleep_handler
@@ -68,7 +72,7 @@ Resources:
     Properties:
       FunctionName: !Ref FunctionNameParam
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.handler
@@ -78,7 +82,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.custom_env_var_echo_hanler
@@ -103,7 +107,7 @@ Resources:
     Properties:
       FunctionName: customname
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.custom_env_var_echo_hanler
@@ -116,7 +120,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.write_to_stderr
@@ -126,7 +130,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.write_to_stdout
@@ -136,7 +140,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.echo_event
@@ -146,7 +150,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.raise_exception
@@ -156,7 +160,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.sleep_handler
@@ -167,7 +171,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.env_var_echo_hanler
@@ -187,7 +191,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.sleep_handler
@@ -200,7 +204,7 @@ Resources:
       FunctionName: func-name-override
       PackageType: Image
       Code:
-        ImageUri: sam-test-lambdaimage:v1
+        ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.handler
@@ -210,7 +214,7 @@ Resources:
     Properties:
       FunctionName: echo-func-name-override
       PackageType: Image
-      ImageUri: sam-test-lambdaimage:v1
+      ImageUri: !Ref TestImageUri
       ImageConfig:
         Command:
           - main.echo_event

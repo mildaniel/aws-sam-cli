@@ -429,8 +429,9 @@ class TestDeleteOldRapidImages(InvokeIntegBase):
     def setUpClass(cls):
         super(TestDeleteOldRapidImages, cls).setUpClass()
         cls.client = docker.from_env()
-        cls.repo = "sam-test-lambdaimage"
+        cls.repo = "sam-test-lambdaimage-delete"
         cls.tag = f"{cls.repo}:v1"
+        cls.parameter_overrides = {"TestImageUri": f"{cls.repo}{cls.tag}"}
         cls.test_data_invoke_path = str(Path(cls.integration_dir).joinpath("testdata", "invoke"))
         # Directly build an image that will be used across all local invokes in this class.
         for log in cls.client.api.build(
@@ -470,7 +471,7 @@ class TestDeleteOldRapidImages(InvokeIntegBase):
     @pytest.mark.flaky(reruns=3)
     def test_building_new_rapid_image_removes_old_rapid_images(self):
         command_list = InvokeIntegBase.get_command_list(
-            "HelloWorldServerlessFunction", template_path=self.template_path, event_path=self.event_path
+            "HelloWorldServerlessFunction", template_path=self.template_path, event_path=self.event_path, parameter_overrides=self.parameter_overrides
         )
 
         process = Popen(command_list, stdout=PIPE)
@@ -497,7 +498,7 @@ class TestDeleteOldRapidImages(InvokeIntegBase):
             print(log)
 
         command_list = InvokeIntegBase.get_command_list(
-            "HelloWorldServerlessFunction", template_path=self.template_path, event_path=self.event_path
+            "HelloWorldServerlessFunction", template_path=self.template_path, event_path=self.event_path, parameter_overrides=self.parameter_overrides
         )
 
         process = Popen(command_list, stdout=PIPE)
@@ -521,7 +522,7 @@ class TestDeleteOldRapidImages(InvokeIntegBase):
                 print(log)
 
         command_list = InvokeIntegBase.get_command_list(
-            "HelloWorldServerlessFunction", template_path=self.template_path, event_path=self.event_path
+            "HelloWorldServerlessFunction", template_path=self.template_path, event_path=self.event_path, parameter_overrides=self.parameter_overrides
         )
 
         process = Popen(command_list, stdout=PIPE)
