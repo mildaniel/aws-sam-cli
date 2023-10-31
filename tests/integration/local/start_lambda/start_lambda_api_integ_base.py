@@ -81,7 +81,9 @@ class StartLambdaIntegBaseClass(TestCase):
         if cls.moved_to_scratch:
             return
         cls.moved_to_scratch = True
-        scratch_dir = Path(__file__).resolve().parent.joinpath(".tmp", str(uuid.uuid4()).replace("-", "")[:10], "testdata")
+        scratch_dir = (
+            Path(__file__).resolve().parent.joinpath(".tmp", str(uuid.uuid4()).replace("-", "")[:10], "testdata")
+        )
         shutil.rmtree(scratch_dir, ignore_errors=True)
         os.makedirs(scratch_dir)
         copytree(str(Path(cls.integration_dir).joinpath("testdata")), str(scratch_dir))

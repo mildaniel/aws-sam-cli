@@ -254,7 +254,6 @@ class TestLambdaService(StartLambdaIntegBaseClass):
 
 
 class TestWarmContainersBaseClass(StartLambdaIntegBaseClass):
-
     @classmethod
     def setUpClass(cls):
         cls.mode_env_variable = str(uuid.uuid4())
@@ -264,8 +263,11 @@ class TestWarmContainersBaseClass(StartLambdaIntegBaseClass):
     def count_running_containers(self):
         running_containers = 0
         for container in self.docker_client.containers.list():
-            if container.attrs.get("State", {}).get("Status", "").lower() == "running" and \
-                    f"MODE={self.mode_env_variable}" in container.attrs.get("Config", {}).get("Env", []):
+            if container.attrs.get("State", {}).get(
+                "Status", ""
+            ).lower() == "running" and f"MODE={self.mode_env_variable}" in container.attrs.get("Config", {}).get(
+                "Env", []
+            ):
                 running_containers += 1
         return running_containers
 

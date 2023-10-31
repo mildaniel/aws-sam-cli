@@ -42,8 +42,8 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
         cls.test_data_path = Path(cls.get_integ_dir()) / "testdata" / "start_api"
         cls.project_directory = cls.test_data_path / "terraform" / cls.terraform_application
         cls.moved_to_scatch_dir = True
-        scratch_dir = Path(__file__).resolve().parent.joinpath(
-            ".tmp", str(uuid.uuid4()).replace("-", "")[:10], "testdata"
+        scratch_dir = (
+            Path(__file__).resolve().parent.joinpath(".tmp", str(uuid.uuid4()).replace("-", "")[:10], "testdata")
         )
         shutil.rmtree(scratch_dir, ignore_errors=True)
         os.makedirs(scratch_dir)
