@@ -2130,7 +2130,9 @@ class TestWarmContainersBaseClass(StartApiIntegBaseClass):
     @classmethod
     def setUpClass(cls):
         cls.mode_env_variable = str(uuid.uuid4())
-        cls.parameter_overrides = {"ModeEnvVariable": cls.mode_env_variable}
+        if not cls.parameter_overrides:
+            cls.parameter_overrides = {}
+        cls.parameter_overrides["ModeEnvVariable"] = cls.mode_env_variable
         super().setUpClass()
 
     def setUp(self):
