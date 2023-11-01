@@ -234,7 +234,7 @@ for:
       - sh: "sudo mv /opt/terraform/terraform /usr/local/bin/"
       - sh: "terraform -version"
 
-      - sh: "pytest -vv tests/integration/local/invoke tests/integration/local/generate_event --json-report --json-report-file=TEST_REPORT-integration-local.json"
+      - sh: "pytest -vv tests/integration/local/invoke tests/integration/local/generate_event -n 3 --dist loadscope  --json-report --json-report-file=TEST_REPORT-integration-local.json"
 
   # Integ testing local
   -
@@ -251,7 +251,7 @@ for:
       - sh: "sudo mv /opt/terraform/terraform /usr/local/bin/"
       - sh: "terraform -version"
 
-      - sh: "pytest -vv tests/integration/local/start_api tests/integration/local/start_lambda --json-report --json-report-file=TEST_REPORT-integration-local-start.json"
+      - sh: "pytest -vv tests/integration/local/start_api tests/integration/local/start_lambda -n 3 --dist loadscope --json-report --json-report-file=TEST_REPORT-integration-local-start.json"
 
   # Other testing
   -
