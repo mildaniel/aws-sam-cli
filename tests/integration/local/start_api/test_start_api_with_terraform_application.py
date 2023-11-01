@@ -3,7 +3,7 @@ import shutil
 import os
 import uuid
 from pathlib import Path
-from subprocess import CalledProcessError, CompletedProcess, run
+from subprocess import CalledProcessError, CompletedProcess, run, TimeoutExpired
 from typing import Optional
 from unittest import skipIf
 from parameterized import parameterized, parameterized_class
@@ -13,7 +13,7 @@ import requests
 
 from tests.integration.local.common_utils import random_port
 from tests.integration.local.start_api.start_api_integ_base import StartApiIntegBaseClass
-from tests.testing_utils import get_sam_command, CI_OVERRIDE
+from tests.testing_utils import get_sam_command, CI_OVERRIDE, run_command
 
 LOG = logging.getLogger(__name__)
 
@@ -76,11 +76,11 @@ class TerraformStartApiIntegrationBase(StartApiIntegBaseClass):
             )
             LOG.info(command_result.stdout.decode("utf-8"))
             LOG.info(command_result.stderr.decode("utf-8"))
+            return command_result
         except CalledProcessError as ex:
             LOG.info(ex.stdout.decode("utf-8"))
             LOG.info(ex.stderr.decode("utf-8"))
-            raise ex
-        return command_result
+            raise
 
 
 class TerraformStartApiIntegrationApplyBase(TerraformStartApiIntegrationBase):
@@ -155,10 +155,10 @@ class TestStartApiTerraformApplication(TerraformStartApiIntegrationBase):
             self.assertEqual(response.json(), {"message": "hello world"})
 
 
-# @skipIf(
-#     not CI_OVERRIDE,
-#     "Skip Terraform test cases unless running in CI",
-# )
+@skipIf(
+    not CI_OVERRIDE,
+    "Skip Terraform test cases unless running in CI",
+)
 @pytest.mark.flaky(reruns=3)
 class TestStartApiTerraformApplicationCustomPlanFile(TerraformStartApiIntegrationBase):
     terraform_application = "terraform-v1-api-simple"
